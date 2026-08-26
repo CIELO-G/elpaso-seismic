@@ -1,0 +1,98 @@
+/* El Paso Seismic Network — public site.
+   Palette matches the El Paso Monitor app: slate surfaces, orange accent. */
+
+:root {
+  --bg: #0f141c;
+  --surface: #161d28;
+  --surface-2: #1c2533;
+  --border: #2a3547;
+  --ink: #e8edf5;
+  --ink-2: #9aa7ba;
+  --accent: #f57c00;
+  --blue: #5b9dd9;
+  --red: #ef5350;
+  --green: #66bb6a;
+}
+
+* { box-sizing: border-box; margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 15px/1.55 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.topbar {
+  display: flex; align-items: center; padding: 14px 22px;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-mark { width: 30px; height: 30px; color: var(--accent); }
+.brand-name { font-weight: 700; font-size: 17px; letter-spacing: .2px; }
+.brand-sub { color: var(--ink-2); font-size: 12.5px; }
+
+main { max-width: 1180px; margin: 0 auto; padding: 18px 22px 40px; }
+
+.stats { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+.stat {
+  flex: 1; min-width: 140px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px 18px;
+}
+.stat b { display: block; font-size: 26px; color: var(--accent); }
+.stat span { color: var(--ink-2); font-size: 12.5px; }
+
+.map-panel { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+#map { height: 440px; background: var(--surface); }
+
+.content { display: grid; grid-template-columns: 340px 1fr; gap: 18px; margin-top: 18px; }
+@media (max-width: 860px) { .content { grid-template-columns: 1fr; } }
+
+.event-list-panel, .detail-panel {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px 18px;
+}
+h2 { font-size: 15px; margin-bottom: 10px; color: var(--ink); }
+
+#event-list { max-height: 520px; overflow-y: auto; }
+.ev-row {
+  display: flex; justify-content: space-between; gap: 8px;
+  padding: 8px 10px; border-radius: 7px; cursor: pointer;
+  border: 1px solid transparent; font-size: 13.5px;
+}
+.ev-row:hover { background: var(--surface-2); }
+.ev-row.active { border-color: var(--accent); background: var(--surface-2); }
+.ev-date { color: var(--ink-2); }
+.ev-mag { font-weight: 600; }
+.ev-mag.blast { color: var(--accent); }
+.ev-mag.eq { color: var(--blue); }
+
+#detail-meta { color: var(--ink-2); font-size: 13px; margin-bottom: 12px; }
+#detail-meta b { color: var(--ink); }
+.trace { margin-bottom: 10px; }
+.trace-label { font-size: 12px; color: var(--ink-2); margin-bottom: 2px; }
+.trace canvas {
+  width: 100%; height: 84px; display: block;
+  background: var(--surface-2); border-radius: 6px;
+}
+.hint { color: var(--ink-2); font-size: 13px; }
+
+.about { margin-top: 22px; color: var(--ink-2); max-width: 760px; }
+.about h2, .about b { color: var(--ink); }
+
+.footer {
+  border-top: 1px solid var(--border); color: var(--ink-2);
+  padding: 14px 22px; font-size: 12.5px; text-align: center;
+}
+.foot-sep { margin: 0 8px; }
+
+/* Leaflet dark-theme tweaks */
+.leaflet-container { background: var(--bg); }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  background: var(--surface-2); color: var(--ink);
+}
+.sta-icon {
+  width: 0; height: 0;
+  border-left: 6px solid transparent; border-right: 6px solid transparent;
+  border-top: 9px solid #cfd8e3; filter: drop-shadow(0 0 1px #000);
+}

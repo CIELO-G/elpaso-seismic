@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El Paso Seismic Network</title>
+<meta name="description" content="Public catalog of seismic events recorded by the El Paso seismic network — quarry blasts and earthquakes in the El Paso / Juárez region.">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js"></script>
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2 12h3l2-7 3 14 3-10 2 5 2-2h5"/>
+    </svg>
+    <div>
+      <div class="brand-name">El Paso Seismic Network</div>
+      <div class="brand-sub">Public event catalog &mdash; updated daily</div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="stats" id="stats">
+    <div class="stat"><b id="st-events">&mdash;</b><span>confirmed events</span></div>
+    <div class="stat"><b id="st-blasts">&mdash;</b><span>quarry blasts</span></div>
+    <div class="stat"><b id="st-quakes">&mdash;</b><span>earthquakes</span></div>
+    <div class="stat"><b id="st-stations">&mdash;</b><span>stations</span></div>
+  </section>
+
+  <section class="map-panel">
+    <div id="map"></div>
+  </section>
+
+  <section class="content">
+    <div class="event-list-panel">
+      <h2>Recent events</h2>
+      <div id="event-list"></div>
+    </div>
+    <div class="detail-panel" id="detail-panel">
+      <h2 id="detail-title">Select an event</h2>
+      <div id="detail-meta"></div>
+      <div id="detail-waves"></div>
+      <p class="hint" id="detail-hint">Click an event on the map or in the list
+        to see its recorded waveforms.</p>
+    </div>
+  </section>
+
+  <section class="about">
+    <h2>About this network</h2>
+    <p>A small research seismic network operated in the El Paso, Texas region,
+    combining Raspberry Shake community seismometers with the broadband
+    station KIDD (UTEP). Events are detected automatically with machine
+    learning (PhaseNet), associated (GaMMA), located (NonLinLoc), and
+    manually reviewed before appearing here. Most detections are
+    <b>quarry blasts</b> from mining operations around the Franklin
+    Mountains and Juárez; the catalog also contains locally recorded
+    <b>earthquakes</b>.</p>
+  </section>
+</main>
+
+<footer class="footer">
+  <span id="updated">&mdash;</span>
+  <span class="foot-sep">·</span>
+  <a href="https://github.com/CIELO-G/elpaso-quake-network">pipeline source</a>
+  <span class="foot-sep">·</span>
+  <a href="https://github.com/CIELO-G/elpaso-seismic">site source</a>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>
