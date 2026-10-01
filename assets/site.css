@@ -1,98 +1,829 @@
 /* El Paso Seismic Network — public site.
-   Palette matches the El Paso Monitor app: slate surfaces, orange accent. */
+ *
+ * LIGHT PAGE, DARK INSTRUMENTS. The page is light and open; the things
+ * that are readouts — the map band at the top and the waveform canvases —
+ * stay black, so they read as instrument panels set into the page rather
+ * than as a different theme. That contrast is the whole look.
+ *
+ * DATA COLOURS ARE NOT DECORATION. --blast and --quake are the two
+ * categorical slots, and they are stepped to clear 3:1 on BOTH surfaces —
+ * the near-black map and the light page — so an event is the same colour
+ * wherever it appears. Verified with tools/validate_palette.py:
+ *
+ *   blast #04a14a   dark 5.58:1   light 3.12:1
+ *   quake #e307dc   dark 4.79:1   light 3.63:1
+ *   separation: normal dE 45.9 · protan 31.5 · deutan 20.1  (target 8)
+ *
+ * Re-run the validator against BOTH surfaces before changing them.
+ *
+ * --accent is UI chrome only (links, focus, active states). Text never
+ * wears a data colour; identity comes from a swatch beside the text.
+ * Map ring annotations use a neutral, not a data colour, so a cluster
+ * outline can never be mistaken for an event.
+ */
 
 :root {
-  --bg: #0f141c;
-  --surface: #161d28;
-  --surface-2: #1c2533;
-  --border: #2a3547;
-  --ink: #e8edf5;
-  --ink-2: #9aa7ba;
-  --accent: #f57c00;
-  --blue: #5b9dd9;
-  --red: #ef5350;
-  --green: #66bb6a;
+  /* light page */
+  --bg:         #f5f6f4;
+  --surface:    #ffffff;
+  --surface-2:  #eef0ec;
+  --border:     #e3e5e1;
+  --border-2:   #cfd2cc;
+
+  /* ink — all clear 4.5:1 on the page and on white */
+  --ink:        #14171a;
+  --ink-2:      #545c68;
+  --ink-3:      #616974;
+
+  /* dark instrument surfaces (map band, waveform canvases) */
+  --dark:        #0c0c0c;
+  --dark-2:      #161719;
+  --dark-border: #2a2c30;
+  --dark-ink:    #eef1f4;
+  --dark-ink-2:  #9aa3ae;
+
+  /* data — one pair, valid on both surfaces */
+  --blast:      #04a14a;
+  --quake:      #e307dc;
+
+  /* chart chrome */
+  --grid:       #e8eae6;
+  --axis:       #cfd2cc;
+
+  /* UI accent — deep emerald, never used as a data mark */
+  --accent:     #0e7a3c;
+  --accent-dim: rgba(14,122,60,.10);
+
+  /* annotation + phase colours (on the black instrument surfaces) */
+  --ring:       #c9d1d9;
+  --trace:      #22c3e6;
+  --p-wave:     #ff6b6b;
+  --s-wave:     #7ee787;
+  --rg-wave:    #ffd23f;
+
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+          "Liberation Mono", monospace;
+
+  --radius: 12px;
+  --maxw:   1200px;
+  --ease:   cubic-bezier(.22,.61,.36,1);
 }
 
 * { box-sizing: border-box; margin: 0; }
+
+html { scroll-behavior: smooth; }
+
 body {
-  background: var(--bg); color: var(--ink);
-  font: 15px/1.55 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
+b, strong { font-weight: 640; color: var(--ink); }
+
+/* ── Accessibility primitives ───────────────────────────────────── */
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0;
+  margin: -1px; overflow: hidden; clip: rect(0 0 0 0);
+  white-space: nowrap; border: 0;
+}
+
+/* JS shows and hides things with the `hidden` attribute, but a class that
+   sets `display: flex` beats the UA rule for [hidden]. Settle it once. */
+[hidden] { display: none !important; }
+
+.skip-link {
+  position: absolute; left: 12px; top: -60px; z-index: 1200;
+  background: var(--surface); color: var(--ink);
+  border: 1px solid var(--accent); border-radius: 0 0 10px 10px;
+  padding: 10px 16px; font-size: 13px; transition: top .15s var(--ease);
+}
+.skip-link:focus { top: 0; text-decoration: none; }
+
+a:focus-visible, button:focus-visible, input:focus-visible,
+summary:focus-visible, .ev-row:focus-visible, .trace:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.ev-row:focus, .trace:focus { outline: none; }
+
+/* ── Top bar ────────────────────────────────────────────────────── */
 
 .topbar {
-  display: flex; align-items: center; padding: 14px 22px;
-  background: var(--surface); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 900;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 20px; padding: 12px 26px;
+  background: rgba(245,246,244,.86);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
 }
 .brand { display: flex; align-items: center; gap: 12px; }
-.brand-mark { width: 30px; height: 30px; color: var(--accent); }
-.brand-name { font-weight: 700; font-size: 17px; letter-spacing: .2px; }
-.brand-sub { color: var(--ink-2); font-size: 12.5px; }
-
-main { max-width: 1180px; margin: 0 auto; padding: 18px 22px 40px; }
-
-.stats { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
-.stat {
-  flex: 1; min-width: 140px; background: var(--surface);
-  border: 1px solid var(--border); border-radius: 10px;
-  padding: 14px 18px;
+.brand-mark { width: 26px; height: 26px; color: var(--accent); flex: none; }
+.brand-name {
+  font-weight: 600; font-size: 12.5px; letter-spacing: .13em;
+  text-transform: uppercase; font-family: var(--mono);
 }
-.stat b { display: block; font-size: 26px; color: var(--accent); }
-.stat span { color: var(--ink-2); font-size: 12.5px; }
+.brand-sub { color: var(--ink-3); font-size: 11.5px; }
 
-.map-panel { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-#map { height: 440px; background: var(--surface); }
+.topnav { display: flex; gap: 6px; font-size: 13px; }
+.topnav a {
+  color: var(--ink-2); padding: 6px 11px; border-radius: 999px;
+  transition: background .16s var(--ease), color .16s var(--ease);
+}
+.topnav a:hover { color: var(--ink); background: var(--surface-2); text-decoration: none; }
+/* scroll-spy: site.js marks the section you are in */
+.topnav a.current { color: var(--accent); background: var(--accent-dim); }
 
-.content { display: grid; grid-template-columns: 340px 1fr; gap: 18px; margin-top: 18px; }
-@media (max-width: 860px) { .content { grid-template-columns: 1fr; } }
+/* ── Layout rhythm ──────────────────────────────────────────────── */
 
-.event-list-panel, .detail-panel {
+main { max-width: var(--maxw); margin: 0 auto; padding: 0 26px 90px; }
+main > section { margin-top: 72px; }
+main > section:first-child { margin-top: 30px; }
+
+.section-head { margin-bottom: 20px; max-width: 74ch; }
+.section-head h2 {
+  font-size: 23px; font-weight: 660; letter-spacing: -.015em; line-height: 1.25;
+}
+.section-sub { color: var(--ink-2); font-size: 14.5px; margin-top: 6px; }
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11px; font-weight: 500; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--accent);
+}
+
+.prose { max-width: 72ch; color: var(--ink-2); }
+.prose p { margin-bottom: 12px; }
+.prose p:last-child { margin-bottom: 0; }
+
+/* ── Map band — the one black slab, first thing on the page ─────── */
+/* A sibling of <main>, not a breakout from it. `width: 100vw` counts the
+   scrollbar while the layout viewport does not, so a vw-based full-bleed
+   overflows horizontally by exactly the scrollbar width. */
+
+.map-hero { padding: 0 0 6px; background: var(--dark); }
+.map-frame { position: relative; overflow: hidden; }
+#map { height: clamp(420px, 62vh, 760px); background: var(--dark); }
+
+.map-hud {
+  position: absolute; top: 14px; left: 14px; z-index: 500;
+  display: flex; gap: 1px; background: var(--dark-border);
+  border: 1px solid var(--dark-border); border-radius: 9px; overflow: hidden;
+}
+.hud-cell {
+  background: rgba(12,12,12,.9); backdrop-filter: blur(8px);
+  padding: 9px 15px; min-width: 76px;
+}
+.hud-cell b {
+  display: block; font-family: var(--mono);
+  font-size: 20px; font-weight: 600; line-height: 1.15;
+  color: var(--dark-ink); letter-spacing: -.01em;
+}
+.hud-cell span {
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--dark-ink-2);
+}
+
+.map-legend {
+  position: absolute; left: 14px; bottom: 14px; z-index: 500;
+  display: flex; gap: 14px; flex-wrap: wrap;
+  max-width: calc(100% - 28px);
+  background: rgba(12,12,12,.9); backdrop-filter: blur(8px);
+  border: 1px solid var(--dark-border); border-radius: 9px;
+  padding: 8px 12px; font-size: 12px; color: var(--dark-ink-2);
+}
+.map-legend span { display: inline-flex; align-items: center; gap: 7px; }
+
+.map-caption {
+  max-width: var(--maxw); margin: 12px auto 0; padding: 0 26px;
+  color: var(--ink-3); font-size: 13px;
+}
+
+/* ── Full-screen map ────────────────────────────────────────────── */
+/* Fullscreen is requested on .map-frame, so the HUD and legend come with
+   it. Inside fullscreen the frame IS the viewport, so the map fills it. */
+
+.map-frame:fullscreen,
+.map-frame:-webkit-full-screen { width: 100vw; height: 100vh; background: var(--dark); }
+.map-frame:fullscreen #map,
+.map-frame:-webkit-full-screen #map { height: 100%; }
+
+/* the control matches Leaflet's zoom buttons, which sit directly above it */
+.map-fs button {
+  display: block; width: 30px; height: 30px; padding: 5px;
+  background: rgba(12,12,12,.92); color: var(--dark-ink);
+  border: 0; cursor: pointer; line-height: 0;
+}
+.map-fs button svg { width: 100%; height: 100%; }
+.map-fs button:hover { background: var(--dark-2); }
+.map-fs button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.leaflet-bar.map-fs { border-radius: 4px; overflow: hidden; }
+
+/* ── Story band ─────────────────────────────────────────────────── */
+
+.story {
+  display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.1fr);
+  gap: 44px; align-items: start;
+}
+.story-copy h1 {
+  font-size: clamp(32px, 4.6vw, 52px);
+  line-height: 1.04; font-weight: 700; letter-spacing: -.033em;
+  margin: 12px 0 16px;
+}
+.story-sub { color: var(--ink-2); font-size: 16.5px; max-width: 46ch; }
+
+/* The one hero figure on the page. Proportional figures, not tabular —
+   tabular digits make a big standalone number look loose. */
+.hero-figure {
+  display: flex; align-items: baseline; gap: 16px;
+  margin: 26px 0 14px; padding-top: 22px;
+  border-top: 2px solid var(--ink);
+}
+.hero-figure b {
+  font-size: clamp(48px, 6.6vw, 74px); font-weight: 700;
+  line-height: 1; letter-spacing: -.04em; color: var(--blast);
+  font-variant-numeric: proportional-nums;
+}
+.hero-figure span {
+  color: var(--ink-2); font-size: 14.5px; max-width: 22ch; line-height: 1.35;
+}
+.hero-caption { color: var(--ink-3); font-size: 13.5px; max-width: 50ch; }
+
+/* ── Cards ──────────────────────────────────────────────────────── */
+
+.hero-chart, .chart-card, .panel, .site-card, .faq details {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 10px; padding: 16px 18px;
+  border-radius: var(--radius);
 }
-h2 { font-size: 15px; margin-bottom: 10px; color: var(--ink); }
+.hero-chart { padding: 22px 24px 18px; }
 
-#event-list { max-height: 520px; overflow-y: auto; }
+.chart-head { margin-bottom: 14px; }
+.chart-head h2 { font-size: 16px; font-weight: 660; }
+.chart-head h3 {
+  font-family: var(--mono);
+  font-size: 10.5px; font-weight: 500; letter-spacing: .13em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+.chart-sub { color: var(--ink-3); font-size: 12.5px; margin-top: 3px; }
+.chart-note { color: var(--ink-3); font-size: 12.5px; margin-top: 10px; }
+
+.chart-row {
+  display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px;
+}
+.chart-card { padding: 18px 20px 14px; }
+.chart svg { display: block; width: 100%; height: auto; }
+
+/* ── Chart internals (see assets/charts.js) ─────────────────────── */
+
+.grid { stroke: var(--grid); stroke-width: 1; }  /* solid hairline, never dashed */
+.axis { stroke: var(--axis); stroke-width: 1; }
+
+.ytick, .xtick, .bar-n, .band-label, .peak-label {
+  fill: var(--ink-3); font-size: 11px; font-family: var(--mono);
+}
+.ytick, .xtick { font-size: 10px; }
+.ytick { text-anchor: end; }
+.xtick { text-anchor: middle; }
+
+.bar-n { text-anchor: middle; fill: var(--ink); font-size: 10.5px; opacity: 0; }
+.band { fill: #14171a; opacity: .045; }
+.band-label { opacity: .75; font-size: 10px; letter-spacing: .08em; }
+
+/* the single direct label on the peak bar — selective, never every point */
+.peak-label { fill: var(--ink); font-size: 11.5px; font-weight: 640; text-anchor: middle; }
+.peak-tick { stroke: var(--axis); stroke-width: 1; }
+
+.bar { cursor: pointer; }
+.bar .hit { fill: transparent; }
+.bar .seg { transition: opacity .16s var(--ease), filter .16s var(--ease); }
+.bar:hover .hit { fill: #14171a; fill-opacity: .05; }
+.bar:hover .seg { filter: brightness(1.12) saturate(1.15); }
+.bar:hover .bar-n, .bar:focus-visible .bar-n { opacity: 1; }
+.bar.dim .seg { opacity: .22; }
+.bar:focus { outline: none; }
+.bar:focus-visible .hit {
+  fill: #14171a; fill-opacity: .06;
+  stroke: var(--accent); stroke-width: 1.5;
+}
+
+/* bars grow from the baseline the first time a chart draws */
+.chart svg.grow .seg {
+  transform-origin: center bottom;
+  animation: grow .55s var(--ease) both;
+}
+@keyframes grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+
+.chart-tip {
+  position: fixed; z-index: 1100; pointer-events: none;
+  background: var(--ink); color: #fff;
+  border-radius: 8px; padding: 7px 11px;
+  font-size: 12px; font-family: var(--mono);
+  white-space: nowrap; box-shadow: 0 10px 28px rgba(20,23,26,.22);
+}
+
+/* ── Legend / keys ──────────────────────────────────────────────── */
+
+.legend {
+  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+  color: var(--ink-2); font-size: 13px; margin-top: 16px;
+}
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.key { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
+.key.blast { background: var(--blast); }
+.key.eq    { background: var(--quake); }
+.key.ring {
+  background: none; border: 1px dashed var(--ring); border-radius: 50%;
+  width: 11px; height: 11px;
+}
+.key.sta {
+  width: 0; height: 0; border-radius: 0; background: none;
+  border-left: 5px solid transparent; border-right: 5px solid transparent;
+  border-top: 8px solid var(--ring);
+}
+/* a swatch on the dark legend needs an edge to separate it from black */
+.map-legend .key.blast,
+.map-legend .key.eq { box-shadow: 0 0 0 1px rgba(255,255,255,.2); }
+
+/* ── Catalog + detail ───────────────────────────────────────────── */
+
+.content { display: grid; grid-template-columns: 360px minmax(0,1fr); gap: 18px; }
+
+.panel { padding: 20px 22px; }
+.panel-head { margin-bottom: 12px; }
+.panel-head h2 { font-size: 15.5px; font-weight: 660; }
+
+.search-row { margin-bottom: 10px; }
+#search {
+  width: 100%; background: var(--bg); color: var(--ink);
+  border: 1px solid var(--border-2); border-radius: 8px;
+  padding: 9px 12px; font: inherit; font-size: 13.5px;
+  transition: border-color .16s var(--ease), box-shadow .16s var(--ease);
+}
+#search::placeholder { color: var(--ink-3); }
+#search:focus {
+  border-color: var(--accent); outline: none;
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.filter-chip {
+  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+  margin-bottom: 10px; font-size: 12.5px;
+}
+.chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--accent-dim); border: 1px solid var(--accent);
+  color: var(--accent); border-radius: 999px; padding: 4px 11px;
+  font: inherit; font-size: 12px; font-weight: 550; cursor: pointer;
+  transition: background .16s var(--ease);
+}
+.chip span { font-size: 14px; line-height: 1; }
+.chip:hover { background: rgba(14,122,60,.18); }
+.chip-all { background: none; border-color: var(--border-2); color: var(--ink-2); }
+.chip-all:hover { background: var(--surface-2); }
+.chip-count { color: var(--ink-3); font-family: var(--mono); font-size: 11.5px; }
+
+#event-list { max-height: 560px; overflow-y: auto; margin: 0 -6px; padding: 0 6px; }
 .ev-row {
-  display: flex; justify-content: space-between; gap: 8px;
-  padding: 8px 10px; border-radius: 7px; cursor: pointer;
+  display: grid; grid-template-columns: auto 1fr auto;
+  align-items: center; gap: 10px;
+  padding: 9px 11px; border-radius: 8px; cursor: pointer;
   border: 1px solid transparent; font-size: 13.5px;
+  transition: background .14s var(--ease), border-color .14s var(--ease),
+              transform .14s var(--ease);
 }
-.ev-row:hover { background: var(--surface-2); }
-.ev-row.active { border-color: var(--accent); background: var(--surface-2); }
-.ev-date { color: var(--ink-2); }
-.ev-mag { font-weight: 600; }
-.ev-mag.blast { color: var(--accent); }
-.ev-mag.eq { color: var(--blue); }
+.ev-row:hover { background: var(--surface-2); transform: translateX(2px); }
+.ev-row.active { border-color: var(--accent); background: var(--accent-dim); }
+.ev-date { color: var(--ink-3); font-family: var(--mono); font-size: 12px; }
+.ev-type { display: inline-flex; align-items: center; gap: 8px; color: var(--ink-2); }
+/* identity rides a swatch beside the text, never the text colour itself */
+.ev-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.ev-dot.blast { background: var(--blast); }
+.ev-dot.eq    { background: var(--quake); }
+.ev-mag { font-weight: 620; color: var(--ink); font-family: var(--mono); font-size: 12.5px; }
+.ev-row[hidden] { display: none; }
 
-#detail-meta { color: var(--ink-2); font-size: 13px; margin-bottom: 12px; }
-#detail-meta b { color: var(--ink); }
-.trace { margin-bottom: 10px; }
-.trace-label { font-size: 12px; color: var(--ink-2); margin-bottom: 2px; }
-.trace canvas {
-  width: 100%; height: 84px; display: block;
-  background: var(--surface-2); border-radius: 6px;
+#detail-meta {
+  color: var(--ink-3); font-size: 12px; margin-bottom: 14px; font-family: var(--mono);
 }
-.hint { color: var(--ink-2); font-size: 13px; }
+#detail-meta b { color: var(--ink); font-weight: 600; }
+.ev-id { color: var(--ink-3); }
 
-.about { margin-top: 22px; color: var(--ink-2); max-width: 760px; }
-.about h2, .about b { color: var(--ink); }
+.guide-row {
+  display: inline-flex; align-items: center; gap: 9px;
+  color: var(--ink-2); font-size: 13px; margin-bottom: 12px;
+  padding: 7px 12px; border: 1px solid var(--border-2); border-radius: 8px;
+  cursor: pointer; user-select: none;
+  transition: background .16s var(--ease), border-color .16s var(--ease);
+}
+.guide-row:hover { background: var(--surface-2); color: var(--ink); border-color: var(--ink-3); }
+.guide-row input { accent-color: var(--accent); cursor: pointer; }
+
+/* waveform strips stay black — they are instrument readouts */
+.trace { margin-bottom: 12px; position: relative; }
+.trace-label {
+  font-size: 11px; color: var(--ink-3); margin-bottom: 4px;
+  font-family: var(--mono); letter-spacing: .04em;
+}
+.trace-plot {
+  position: relative; cursor: crosshair;
+  border-radius: 8px; overflow: hidden;
+  border: 1px solid var(--dark-border);
+}
+.trace canvas { width: 100%; height: 84px; display: block; background: var(--dark); }
+.hint { color: var(--ink-3); font-size: 13.5px; }
+.empty-note { padding: 12px 2px; }
+
+/* ── Interactive waveforms (assets/waves.js) ────────────────────── */
+/* Overlay layers carry the cursor, the shaded phase window and the
+   readout, so exploring a trace never costs a canvas redraw. */
+
+.wave-region {
+  position: absolute; top: 0; bottom: 0; z-index: 1;
+  background: rgba(255,255,255,.1);
+  border-left: 1px solid rgba(255,255,255,.35);
+  border-right: 1px solid rgba(255,255,255,.35);
+  pointer-events: none;
+}
+.wave-cursor {
+  position: absolute; top: 0; bottom: 0; width: 1px; z-index: 2;
+  background: #fff; opacity: .85; pointer-events: none;
+}
+.wave-readout {
+  position: absolute; top: 6px; z-index: 3;
+  background: rgba(12,12,12,.94); color: var(--dark-ink);
+  border: 1px solid var(--dark-border); border-radius: 5px;
+  padding: 3px 7px; font-family: var(--mono); font-size: 10.5px;
+  white-space: nowrap; pointer-events: none;
+}
+.wave-hint { margin-bottom: 10px; }
+
+.wave-explainer {
+  margin-top: 6px; background: var(--surface-2);
+  border: 1px solid var(--border-2); border-left: 3px solid var(--accent);
+  border-radius: 0 10px 10px 0; padding: 15px 17px;
+}
+.we-head { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; }
+.we-head h3 { font-size: 14.5px; font-weight: 660; flex: 1; }
+.we-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--ink-3); }
+/* darker steps of the phase hues — the light panel needs them, the black
+   canvas needs the bright ones */
+.we-dot.p  { background: #d93a3a; }
+.we-dot.s  { background: #1f9d45; }
+.we-dot.rg { background: #b07d00; }
+.we-close {
+  background: none; border: 0; color: var(--ink-3); cursor: pointer;
+  font-size: 18px; line-height: 1; padding: 0 2px;
+}
+.we-close:hover { color: var(--ink); }
+.we-body { color: var(--ink-2); font-size: 13.5px; }
+.we-facts { margin: 10px 0 0; padding-left: 18px; color: var(--ink-2); font-size: 12.5px; }
+.we-facts li { margin-bottom: 4px; }
+.we-station { margin-top: 10px; color: var(--ink-3); font-family: var(--mono); font-size: 11px; }
+
+/* ── Quarry sites ───────────────────────────────────────────────── */
+/* One colour for every pit. Identity is carried by the letter on the ring
+   and its card, not by five competing hues — five categorical colours all
+   visible at once on a map cannot clear the all-pairs separation gates. */
+
+.site-list {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+  gap: 14px;
+}
+.site-card {
+  display: flex; align-items: flex-start; gap: 12px; text-align: left;
+  padding: 16px 18px; cursor: pointer; color: var(--ink); font: inherit;
+  width: 100%;
+  transition: border-color .18s var(--ease), box-shadow .18s var(--ease),
+              transform .18s var(--ease);
+}
+.site-card:hover {
+  border-color: var(--ink-3); transform: translateY(-3px);
+  box-shadow: 0 8px 22px rgba(20,23,26,.09);
+}
+.site-card.active {
+  border-color: var(--accent); background: var(--accent-dim);
+  box-shadow: 0 6px 18px rgba(14,122,60,.14);
+}
+.site-badge {
+  width: 32px; height: 32px; border-radius: 9px; flex: none;
+  display: grid; place-items: center; font-family: var(--mono);
+  background: var(--accent-dim); border: 1px solid var(--accent);
+  color: var(--accent); font-weight: 700; font-size: 13px;
+}
+.site-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.site-name { font-weight: 660; font-size: 14.5px; }
+.site-where { color: var(--ink-3); font-size: 12px; }
+.site-stats { color: var(--ink-2); font-size: 12.5px; }
+.site-stats b { color: var(--ink); }
+
+.site-ring { cursor: pointer; }
+/* the standing letter on each ring — a neutral annotation, never a data hue */
+.leaflet-tooltip.site-tag {
+  background: none; border: 0; box-shadow: none; padding: 0;
+  color: var(--ring); font-family: var(--mono);
+  font-weight: 700; font-size: 12px; letter-spacing: .5px;
+  text-shadow: 0 0 6px #000, 0 0 2px #000;
+  transition: opacity .16s var(--ease);
+}
+.leaflet-tooltip.site-tag::before { display: none; }
+
+/* ── Explainer / FAQ ────────────────────────────────────────────── */
+
+.caveat {
+  background: var(--surface-2); border: 1px solid var(--border-2);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 10px 10px 0; padding: 15px 17px;
+  font-size: 14px; margin-top: 6px;
+}
+code {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 5px; padding: 1px 6px;
+  font-family: var(--mono); font-size: 12px;
+}
+
+.faq details {
+  padding: 14px 17px; margin-bottom: 10px;
+  transition: border-color .16s var(--ease), box-shadow .16s var(--ease);
+}
+.faq details:hover { border-color: var(--border-2); }
+.faq details[open] { border-color: var(--ink-3); box-shadow: 0 4px 16px rgba(20,23,26,.06); }
+.faq summary { cursor: pointer; color: var(--ink); font-weight: 640; font-size: 14.5px; }
+.faq summary::marker { color: var(--accent); }
+.faq details p { margin-top: 10px; font-size: 14px; color: var(--ink-2); }
+.faq details p + p { margin-top: 12px; }
+
+.cta {
+  display: inline-block; margin-top: 4px;
+  background: var(--accent); border: 1px solid var(--accent);
+  color: #fff; border-radius: 8px; padding: 9px 16px;
+  font-size: 13.5px; font-weight: 600;
+  transition: transform .16s var(--ease), box-shadow .16s var(--ease);
+}
+.cta:hover {
+  text-decoration: none; transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(14,122,60,.28);
+}
+
+/* ── Footer ─────────────────────────────────────────────────────── */
 
 .footer {
-  border-top: 1px solid var(--border); color: var(--ink-2);
-  padding: 14px 22px; font-size: 12.5px; text-align: center;
+  border-top: 1px solid var(--border); color: var(--ink-3);
+  padding: 24px 26px; font-size: 12px; text-align: center;
+  font-family: var(--mono);
 }
-.foot-sep { margin: 0 8px; }
+.foot-sep { margin: 0 9px; }
 
-/* Leaflet dark-theme tweaks */
-.leaflet-container { background: var(--bg); }
+/* ── Leaflet theming (the map stays dark) ───────────────────────── */
+
+.leaflet-container { background: var(--dark); font: inherit; }
 .leaflet-popup-content-wrapper, .leaflet-popup-tip {
-  background: var(--surface-2); color: var(--ink);
+  background: var(--dark-2); color: var(--dark-ink);
+  border: 1px solid var(--dark-border);
 }
+.leaflet-popup-content-wrapper { border-radius: 9px; }
+.leaflet-popup-close-button { color: var(--dark-ink-2) !important; }
+.leaflet-control-zoom a {
+  background: rgba(12,12,12,.92); color: var(--dark-ink);
+  border-color: var(--dark-border);
+}
+.leaflet-control-zoom a:hover { background: var(--dark-2); }
+.leaflet-control-attribution {
+  background: rgba(12,12,12,.8); color: var(--dark-ink-2); font-size: 10.5px;
+}
+.leaflet-control-attribution a { color: var(--dark-ink-2); }
 .sta-icon {
   width: 0; height: 0;
   border-left: 6px solid transparent; border-right: 6px solid transparent;
-  border-top: 9px solid #cfd8e3; filter: drop-shadow(0 0 1px #000);
+  border-top: 9px solid var(--ring); filter: drop-shadow(0 0 2px #000);
+}
+
+/* ── Reveal on scroll (applied from JS, so no-JS stays visible) ─── */
+
+.reveal { opacity: 0; transform: translateY(16px); }
+.reveal.in {
+  opacity: 1; transform: none;
+  transition: opacity .55s var(--ease), transform .55s var(--ease);
+}
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+
+@media (max-width: 940px) {
+  .story { grid-template-columns: 1fr; gap: 30px; }
+  .content { grid-template-columns: 1fr; }
+  .chart-row { grid-template-columns: 1fr; }
+  .topnav { display: none; }
+}
+
+@media (max-width: 640px) {
+  main { padding: 0 15px 60px; }
+  main > section { margin-top: 50px; }
+  .topbar { padding: 10px 15px; }
+  #map { height: clamp(360px, 56vh, 480px); }
+  .map-caption { padding: 0 15px; }
+
+  /* the HUD would cover half a small map — drop it below instead */
+  .map-hud {
+    position: static; margin: 0; border-radius: 0;
+    border-left: 0; border-right: 0;
+    display: grid; grid-template-columns: repeat(4, 1fr);
+  }
+  .hud-cell { min-width: 0; padding: 9px 6px; text-align: center; }
+  .hud-cell b { font-size: 17px; }
+  .hud-cell span { font-size: 9px; letter-spacing: .06em; }
+
+  /* zoom control owns the top right; the HUD has left the top left */
+  .map-legend {
+    top: 10px; left: 10px; bottom: auto; right: auto;
+    font-size: 11px; gap: 8px; padding: 6px 9px;
+    max-width: calc(100% - 66px);
+  }
+
+  #event-list { max-height: 420px; }
+  .site-list { grid-template-columns: 1fr; }
+  .hero-figure { flex-wrap: wrap; gap: 10px; }
+  .section-head h2 { font-size: 20px; }
+  .footer { padding: 20px 15px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .bar .seg, .site-card, .skip-link, .ev-row, .chip, .cta,
+  .faq details, .guide-row, #search, .topnav a,
+  .leaflet-tooltip.site-tag { transition: none; }
+  .reveal { opacity: 1; transform: none; }
+  .reveal.in { transition: none; }
+  .site-card:hover, .ev-row:hover, .cta:hover { transform: none; }
+  .chart svg.grow .seg { animation: none; }
+}
+
+/* ── event.html — the single-event deep page ───────────────────────
+   Same tokens as the front page: light ground, black instrument panels
+   for anything that is a readout. */
+
+.event-head { max-width: 80ch; }
+.event-head h1 {
+  font-size: clamp(28px, 3.6vw, 40px); font-weight: 700;
+  letter-spacing: -.03em; line-height: 1.08; margin: 10px 0 10px;
+}
+.event-sub { color: var(--ink-2); font-size: 15px; }
+
+.ev-facts {
+  /* fixed column count, not auto-fit: there are exactly 6 facts, and an
+     auto-fit grid leaves empty cells that show the divider colour */
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 1px; background: var(--border); margin-top: 24px;
+  border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+}
+.ev-facts > div { background: var(--surface); padding: 14px 16px; }
+.ev-facts dt {
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--ink-3); margin-bottom: 4px;
+}
+.ev-facts dd {
+  margin: 0; font-family: var(--mono); font-size: 16px;
+  font-weight: 600; color: var(--ink);
+}
+
+/* the record section is a readout, so it is black like the map */
+.record-frame { margin: 0; }
+.record-plot {
+  background: var(--dark); border: 1px solid var(--dark-border);
+  border-radius: var(--radius); overflow: hidden;
+}
+#record-canvas { display: block; width: 100%; height: 420px; }
+.record-legend {
+  display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px;
+  color: var(--ink-2); font-size: 12.5px;
+}
+.record-legend span { display: inline-flex; align-items: center; gap: 7px; }
+.key-line { width: 16px; height: 0; border-top: 2px dashed; display: inline-block; }
+.key-line.p { border-color: #d93a3a; }
+.key-line.s { border-color: #1f9d45; }
+.key-dot {
+  width: 9px; height: 9px; border-radius: 50%; display: inline-block;
+  background: var(--ink-2);
+}
+
+/* picks + working tables */
+.table-wrap { overflow-x: auto; }           /* wide tables scroll, page never does */
+.picks-table {
+  width: 100%; border-collapse: collapse; font-size: 13.5px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+}
+.picks-table th {
+  text-align: left; font-family: var(--mono);
+  font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink-3); font-weight: 500;
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+}
+.picks-table td {
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  color: var(--ink-2);
+}
+.picks-table tbody tr:last-child td { border-bottom: 0; }
+.picks-table td.num { font-family: var(--mono); color: var(--ink); }
+.picks-table td.ok { color: var(--accent); font-size: 12.5px; }
+.picks-table td.off { color: var(--ink-3); font-size: 12.5px; }
+
+.phase {
+  display: inline-block; min-width: 20px; text-align: center;
+  font-family: var(--mono); font-weight: 700; font-size: 12px;
+  border-radius: 4px; padding: 1px 6px;
+}
+.phase.p { background: rgba(217,58,58,.12); color: #b32b2b; }
+.phase.s { background: rgba(31,157,69,.12); color: #17803a; }
+
+.working { margin-top: 22px; }
+.working h3 { font-size: 15px; font-weight: 660; margin-bottom: 8px; }
+.working > p { color: var(--ink-2); font-size: 14px; max-width: 72ch; margin-bottom: 14px; }
+.working .picks-table { margin-bottom: 12px; }
+
+.locator-frame { border-radius: var(--radius); border: 1px solid var(--dark-border); }
+#event-map { height: clamp(320px, 44vh, 520px); background: var(--dark); }
+
+.back-link { margin-top: 56px; font-size: 14px; }
+
+/* the front page's link through to here */
+.detail-more { margin-top: 14px; }
+.more-link { font-size: 13.5px; font-weight: 600; }
+
+@media (max-width: 640px) {
+  #record-canvas { height: 340px; }
+  .ev-facts { grid-template-columns: repeat(2, 1fr); }  /* 6 facts -> 3 rows */
+  .picks-table th, .picks-table td { padding: 9px 10px; }
+}
+
+/* ── Language toggle ───────────────────────────────────────────────── */
+
+.topbar-right { display: flex; align-items: center; gap: 14px; }
+.lang-btn {
+  background: none; border: 1px solid var(--border-2); color: var(--ink-2);
+  border-radius: 999px; padding: 5px 13px; font: inherit; font-size: 12.5px;
+  font-weight: 600; cursor: pointer; white-space: nowrap;
+  transition: background .16s var(--ease), color .16s var(--ease),
+              border-color .16s var(--ease);
+}
+.lang-btn:hover {
+  background: var(--accent-dim); color: var(--accent); border-color: var(--accent);
+}
+
+/* ── Freshness ─────────────────────────────────────────────────────
+   A visitor who felt something last night and finds nothing recent will
+   assume the project is dead unless the page says otherwise. */
+
+.freshness {
+  max-width: var(--maxw); margin: 8px auto 0; padding: 0 26px;
+  color: var(--ink-3); font-size: 13px;
+}
+.freshness b { color: var(--ink-2); font-weight: 600; }
+
+/* ── What to expect ────────────────────────────────────────────────── */
+
+.expect-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1px; background: var(--border);
+  border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+}
+.expect-grid p {
+  background: var(--surface); padding: 16px 18px;
+  color: var(--ink-2); font-size: 14px; margin: 0;
+}
+.expect-boom {
+  color: var(--ink-2); font-size: 14.5px; max-width: 72ch; margin-top: 18px;
+}
+
+/* ── Did You Feel It ───────────────────────────────────────────────
+   Promoted out of the FAQ: for a local audience this is the point. */
+
+.dyfi {
+  background: var(--surface); border: 1px solid var(--accent);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 22px 24px; margin-bottom: 20px;
+}
+.dyfi h3 { font-size: 18px; font-weight: 680; margin-bottom: 8px; }
+.dyfi > p { color: var(--ink-2); font-size: 14.5px; max-width: 64ch; margin-bottom: 14px; }
+.dyfi .cta { margin-top: 0; }
+.dyfi-note {
+  color: var(--ink-3); font-size: 12.5px; max-width: 64ch; margin-top: 14px;
+}
+
+/* place label in the detail panel — the thing a local actually reads */
+.ev-where {
+  color: var(--ink); font-family: system-ui, sans-serif;
+  font-size: 14px; font-weight: 640;
+}
+
+@media (max-width: 640px) {
+  .freshness { padding: 0 15px; }
+  .topbar-right { gap: 8px; }
+  .lang-btn { padding: 4px 10px; font-size: 12px; }
+  .dyfi { padding: 18px 16px; }
+  .dyfi h3 { font-size: 16px; }
 }

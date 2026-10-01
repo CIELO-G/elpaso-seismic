@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Event detail — El Paso Seismic Network</title>
+<meta name="description" content="Full detail for a single recorded event: record section, every station's waveform, phase picks and the distance working.">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<!-- bridges maplibre's GL basemap into Leaflet; event-page.js calls L.maplibreGL() -->
+<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js"></script>
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+
+<a class="skip-link" href="#record" data-i18n="skip.record">Skip to the record section</a>
+
+<!-- Duplicated from index.html on purpose: there is no build step to
+     template it, and injecting it with JS would flash and break no-JS. -->
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M2 12h3l2-7 3 14 3-10 2 5 2-2h5"/>
+    </svg>
+    <div>
+      <div class="brand-name" data-i18n="brand.name">El Paso Seismic Network</div>
+      <div class="brand-sub" data-i18n="brand.sub">Public event catalog</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <nav class="topnav" aria-label="Sections">
+      <a href="index.html" data-i18n="nav.back">&larr; Back to the map</a>
+    </nav>
+    <button type="button" id="lang-btn" class="lang-btn">Espa&ntilde;ol</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ── Event header ─────────────────────────────────────────────── -->
+  <section class="event-head" id="event-head">
+    <p class="eyebrow" id="ev-eyebrow">Event</p>
+    <h1 id="ev-title">Loading&hellip;</h1>
+    <p class="event-sub" id="ev-sub"></p>
+
+    <dl class="ev-facts" id="ev-facts"></dl>
+  </section>
+
+  <!-- ── Record section: the marquee figure ───────────────────────── -->
+  <section class="record" id="record">
+    <div class="section-head">
+      <h2 data-i18n="event.record">The record section</h2>
+      <p class="section-sub" id="record-sub" data-i18n="event.recordSub"></p>
+    </div>
+
+    <figure class="record-frame">
+      <div class="record-plot"><canvas id="record-canvas"></canvas></div>
+      <figcaption class="record-legend">
+        <span><i class="key-line p"></i><span data-i18n="event.pMoveout">P move-out</span></span>
+        <span><i class="key-line s"></i><span data-i18n="event.sMoveout">S move-out</span></span>
+        <span><i class="key-dot"></i><span data-i18n="event.pick">Analyst pick</span></span>
+      </figcaption>
+    </figure>
+
+    <p class="chart-note" id="record-note"></p>
+  </section>
+
+  <!-- ── Per-station traces ───────────────────────────────────────── -->
+  <section class="traces" id="traces">
+    <div class="section-head">
+      <h2 data-i18n="event.byStation">Station by station</h2>
+      <p class="section-sub" data-i18n="event.byStationSub"></p>
+    </div>
+
+    <label class="guide-row">
+      <input type="checkbox" id="guide-toggle">
+      <span data-i18n="detail.guides">Show P / S move-out guides</span>
+    </label>
+
+    <p id="live-status" class="sr-only" role="status" aria-live="polite"></p>
+    <div id="detail-waves"></div>
+    <div id="wave-explainer" class="wave-explainer" hidden></div>
+  </section>
+
+  <!-- ── Picks + the distance working ─────────────────────────────── -->
+  <section class="picks" id="picks">
+    <div class="section-head">
+      <h2 data-i18n="event.picksH2">Phase picks</h2>
+      <p class="section-sub" data-i18n="event.picksSub"></p>
+    </div>
+    <div class="table-wrap">
+      <table class="picks-table" id="picks-table"></table>
+    </div>
+    <div id="sp-working"></div>
+  </section>
+
+  <!-- ── Where it was ─────────────────────────────────────────────── -->
+  <section class="locator" id="locator">
+    <div class="section-head">
+      <h2 data-i18n="event.where">Where it was</h2>
+      <p class="section-sub" id="locator-sub"></p>
+    </div>
+    <div class="map-frame locator-frame">
+      <div id="event-map"></div>
+    </div>
+    <p class="chart-note" id="depth-note"></p>
+  </section>
+
+  <p class="back-link"><a href="index.html" data-i18n="nav.backCatalog">&larr; Back to the full catalog</a></p>
+
+</main>
+
+<footer class="footer">
+  <span id="updated">&mdash;</span>
+  <span class="foot-sep">&middot;</span>
+  <a href="https://github.com/CIELO-G/elpaso-quake-network" data-i18n="foot.pipeline">pipeline source</a>
+  <span class="foot-sep">&middot;</span>
+  <a href="https://github.com/CIELO-G/elpaso-seismic" data-i18n="foot.site">site source</a>
+</footer>
+
+<!-- waveforms.js first (shared drawing), then the explainer, then this
+     page's own controller. No site.js here: there is no catalog map. -->
+<script src="assets/i18n.js"></script>
+<script src="assets/places.js"></script>
+<script src="assets/waveforms.js"></script>
+<script src="assets/waves.js"></script>
+<script src="assets/event-page.js"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+# macOS folder metadata — not data, and it would be served from the
+# public site. Two copies are already tracked from earlier commits;
+# clearing those needs `git rm --cached .DS_Store data/.DS_Store`.
+.DS_Store
+
+# local scratch
+*.bak
+__*.html
+
+# python bytecode from tools/
+__pycache__/
+*.pyc
