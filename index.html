@@ -9,71 +9,245 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<!-- bridges maplibre's GL basemap into Leaflet; site.js calls L.maplibreGL() -->
 <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js"></script>
 <link rel="stylesheet" href="assets/site.css">
 </head>
 <body>
 
+<a class="skip-link" href="#event-list" data-i18n="skip.list">Skip to the event list</a>
+
 <header class="topbar">
   <div class="brand">
     <svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M2 12h3l2-7 3 14 3-10 2 5 2-2h5"/>
     </svg>
     <div>
-      <div class="brand-name">El Paso Seismic Network</div>
-      <div class="brand-sub">Public event catalog &mdash; updated daily</div>
+      <div class="brand-name" data-i18n="brand.name">El Paso Seismic Network</div>
+      <div class="brand-sub" data-i18n="brand.sub">Public event catalog &mdash; updated daily</div>
     </div>
+  </div>
+  <div class="topbar-right">
+    <nav class="topnav" aria-label="Sections">
+      <a href="#story" data-i18n="nav.finding">The finding</a>
+      <a href="#event-list" data-i18n="nav.catalog">Catalog</a>
+      <a href="#sites" data-i18n="nav.quarries">Quarries</a>
+      <a href="#felt" data-i18n="nav.felt">Felt something?</a>
+    </nav>
+    <button type="button" id="lang-btn" class="lang-btn">Espa&ntilde;ol</button>
   </div>
 </header>
 
-<main>
-  <section class="stats" id="stats">
-    <div class="stat"><b id="st-events">&mdash;</b><span>confirmed events</span></div>
-    <div class="stat"><b id="st-blasts">&mdash;</b><span>quarry blasts</span></div>
-    <div class="stat"><b id="st-quakes">&mdash;</b><span>earthquakes</span></div>
-    <div class="stat"><b id="st-stations">&mdash;</b><span>stations</span></div>
-  </section>
-
-  <section class="map-panel">
+<!-- ── Map, first thing on the page ─────────────────────────────── -->
+<section class="map-hero" aria-label="Event map">
+  <div class="map-frame">
     <div id="map"></div>
+
+    <!-- catalog totals read out over the map like an instrument panel -->
+    <div class="map-hud">
+      <div class="hud-cell"><b id="st-events">&mdash;</b><span data-i18n="hud.events">events</span></div>
+      <div class="hud-cell"><b id="st-blasts">&mdash;</b><span data-i18n="hud.blasts">blasts</span></div>
+      <div class="hud-cell"><b id="st-quakes">&mdash;</b><span data-i18n="hud.quakes">quakes</span></div>
+      <div class="hud-cell"><b id="st-stations">&mdash;</b><span data-i18n="hud.stations">stations</span></div>
+    </div>
+
+    <div class="map-legend">
+      <span><i class="key blast"></i><span data-i18n="legend.blast">Quarry blast</span></span>
+      <span><i class="key eq"></i><span data-i18n="legend.quake">Earthquake</span></span>
+      <span><i class="key sta"></i><span data-i18n="legend.station">Station</span></span>
+      <span><i class="key ring"></i><span data-i18n="legend.cluster">Quarry cluster</span></span>
+    </div>
+  </div>
+  <p class="map-caption" data-i18n="map.caption">Circle size scales with magnitude.</p>
+  <p class="freshness" id="freshness"></p>
+</section>
+
+<main>
+
+  <!-- ── The finding ──────────────────────────────────────────────── -->
+  <section class="story" id="story">
+    <div class="story-copy">
+      <p class="eyebrow" data-i18n="story.eyebrow">El Paso &middot; Ciudad Ju&aacute;rez &middot; since 2025</p>
+      <h1 data-i18n="story.h1">The ground here keeps office hours.</h1>
+      <p class="story-sub" data-i18n="story.sub">Nearly everything this network records is a quarry blast.</p>
+
+      <div class="hero-figure">
+        <b id="hero-figure">&mdash;</b>
+        <span id="hero-figure-label"></span>
+      </div>
+
+      <p class="hero-caption" id="hero-caption"></p>
+    </div>
+
+    <figure class="hero-chart">
+      <figcaption class="chart-head">
+        <h2 data-i18n="chart.when">When events happen</h2>
+        <p class="chart-sub" data-i18n="chart.whenSub">Hour of day, El&nbsp;Paso local time</p>
+      </figcaption>
+      <div class="chart" id="chart-hour"></div>
+      <p class="chart-note" data-i18n="chart.selectBar">Select a bar to filter every view below.</p>
+    </figure>
   </section>
 
+  <!-- ── What to expect ───────────────────────────────────────────── -->
+  <section class="expect" id="expect">
+    <div class="section-head">
+      <h2 data-i18n="expect.h2">What to expect if you live near a quarry</h2>
+      <p class="section-sub" data-i18n="expect.sub">Blasting is scheduled work.</p>
+    </div>
+    <div class="expect-grid">
+      <p id="expect-when"></p>
+      <p id="expect-gap"></p>
+      <p id="expect-sunday"></p>
+    </div>
+    <p class="expect-boom" data-i18n="expect.boom"></p>
+    <p class="chart-note" data-i18n="expect.caveat"></p>
+  </section>
+
+  <!-- ── Catalog + waveforms ──────────────────────────────────────── -->
   <section class="content">
-    <div class="event-list-panel">
-      <h2>Recent events</h2>
+    <div class="panel event-list-panel">
+      <div class="panel-head">
+        <h2 data-i18n="catalog.h2">Event catalog</h2>
+      </div>
+
+      <div class="search-row">
+        <label class="sr-only" for="search" data-i18n="catalog.searchLabel">Search events</label>
+        <input type="search" id="search" autocomplete="off" spellcheck="false"
+               data-i18n-attr="placeholder:catalog.search">
+      </div>
+
+      <div id="filter-chip" class="filter-chip" hidden></div>
+      <p id="live-status" class="sr-only" role="status" aria-live="polite"></p>
       <div id="event-list"></div>
+      <p class="hint empty-note" id="empty-note" data-i18n="catalog.empty" hidden></p>
     </div>
-    <div class="detail-panel" id="detail-panel">
-      <h2 id="detail-title">Select an event</h2>
+
+    <div class="panel detail-panel" id="detail-panel">
+      <div class="panel-head">
+        <h2 id="detail-title" data-i18n="detail.select">Select an event</h2>
+      </div>
       <div id="detail-meta"></div>
+
+      <label class="guide-row" id="guide-row" hidden>
+        <input type="checkbox" id="guide-toggle">
+        <span data-i18n="detail.guides">Show P / S move-out guides</span>
+      </label>
+
+      <p class="hint wave-hint" id="wave-hint" data-i18n="detail.waveHint" hidden></p>
       <div id="detail-waves"></div>
-      <p class="hint" id="detail-hint">Click an event on the map or in the list
-        to see its recorded waveforms.</p>
+      <div id="wave-explainer" class="wave-explainer" hidden></div>
+      <p class="detail-more" id="detail-more" hidden><a id="detail-link"
+        class="more-link" href="#"><span data-i18n="detail.more">See this event in full detail</span>
+        <span aria-hidden="true">&rarr;</span></a></p>
+      <p class="hint" id="detail-hint" data-i18n="detail.hint"></p>
     </div>
   </section>
 
-  <section class="about">
-    <h2>About this network</h2>
-    <p>A small research seismic network operated in the El Paso, Texas region,
-    combining Raspberry Shake community seismometers with the broadband
-    station KIDD (UTEP). Events are detected automatically with machine
-    learning (PhaseNet), associated (GaMMA), located (NonLinLoc), and
-    manually reviewed before appearing here. Most detections are
-    <b>quarry blasts</b> from mining operations around the Franklin
-    Mountains and Juárez; the catalog also contains locally recorded
-    <b>earthquakes</b>.</p>
+  <!-- ── Quarry clusters ──────────────────────────────────────────── -->
+  <section class="sites" id="sites">
+    <div class="section-head">
+      <h2 data-i18n="sites.h2">The quarries show up as clusters</h2>
+      <p class="section-sub" id="sites-lead"></p>
+    </div>
+    <div id="site-list" class="site-list"></div>
+    <p class="chart-note" data-i18n="sites.note"></p>
   </section>
+
+  <!-- ── Supporting charts ────────────────────────────────────────── -->
+  <section class="patterns" id="patterns">
+    <div class="section-head">
+      <h2 data-i18n="patterns.h2">Other patterns in the catalog</h2>
+      <p class="section-sub" id="chart-scope"></p>
+    </div>
+
+    <div class="chart-row">
+      <figure class="chart-card">
+        <figcaption class="chart-head"><h3 data-i18n="chart.dow">Day of week</h3></figcaption>
+        <div class="chart" id="chart-dow"></div>
+      </figure>
+      <figure class="chart-card">
+        <figcaption class="chart-head"><h3 data-i18n="chart.month">Events per month</h3></figcaption>
+        <div class="chart" id="chart-month"></div>
+      </figure>
+      <figure class="chart-card">
+        <figcaption class="chart-head"><h3 data-i18n="chart.mag">Magnitude</h3></figcaption>
+        <div class="chart" id="chart-mag"></div>
+      </figure>
+    </div>
+
+    <p class="legend">
+      <span><i class="key blast"></i><span data-i18n="legend.blast">Quarry blast</span></span>
+      <span><i class="key eq"></i><span data-i18n="legend.quake">Earthquake</span></span>
+    </p>
+  </section>
+
+  <!-- ── Did You Feel It — a standing call to action, not an FAQ item ── -->
+  <section class="felt" id="felt">
+    <div class="section-head">
+      <h2 data-i18n="felt.h2">Felt something?</h2>
+      <p class="section-sub" data-i18n="felt.sub">What that jolt probably was.</p>
+    </div>
+
+    <div class="dyfi">
+      <h3 data-i18n="felt.bannerTitle">Did you feel it? Tell the USGS.</h3>
+      <p data-i18n="felt.bannerBody"></p>
+      <a class="cta" href="https://earthquake.usgs.gov/data/dyfi/" rel="noopener"
+         data-i18n="felt.bannerCta">Report it to USGS</a>
+      <p class="dyfi-note" data-i18n="felt.bannerNote"></p>
+    </div>
+
+    <details>
+      <summary data-i18n="faq.q1"></summary>
+      <p data-i18n="faq.a1"></p>
+    </details>
+    <details>
+      <summary data-i18n="faq.q2"></summary>
+      <p data-i18n="faq.a2"></p>
+    </details>
+    <details>
+      <summary data-i18n="faq.q4"></summary>
+      <p data-i18n="faq.a4"></p>
+    </details>
+    <details>
+      <summary data-i18n="faq.q3"></summary>
+      <p data-i18n="faq.a3"></p>
+    </details>
+  </section>
+
+  <!-- ── About ────────────────────────────────────────────────────── -->
+  <section class="about">
+    <div class="section-head">
+      <h2 data-i18n="about.h2">About this network</h2>
+    </div>
+    <div class="prose">
+      <p data-i18n="about.body"></p>
+    </div>
+  </section>
+
 </main>
 
 <footer class="footer">
   <span id="updated">&mdash;</span>
-  <span class="foot-sep">·</span>
-  <a href="https://github.com/CIELO-G/elpaso-quake-network">pipeline source</a>
-  <span class="foot-sep">·</span>
-  <a href="https://github.com/CIELO-G/elpaso-seismic">site source</a>
+  <span class="foot-sep">&middot;</span>
+  <a href="https://github.com/CIELO-G/elpaso-quake-network" data-i18n="foot.pipeline">pipeline source</a>
+  <span class="foot-sep">&middot;</span>
+  <a href="https://github.com/CIELO-G/elpaso-seismic" data-i18n="foot.site">site source</a>
 </footer>
 
+<!-- Order matters: i18n.js defines t() and must be first; places.js uses it;
+     waveforms.js holds the drawing code shared with event.html; site.js
+     defines `map`/`markers`/`catalog` and publishes window.siteReady;
+     filters.js owns the shared filter state; clusters.js stamps site
+     membership onto the catalog before charts.js first draws. -->
+<script src="assets/i18n.js"></script>
+<script src="assets/places.js"></script>
+<script src="assets/waveforms.js"></script>
 <script src="assets/site.js"></script>
+<script src="assets/filters.js"></script>
+<script src="assets/clusters.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/waves.js"></script>
 </body>
 </html>
