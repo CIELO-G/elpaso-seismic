@@ -1,15 +1,19 @@
 /* El Paso Seismic Network — the single-event page.
  *
- * Reads an event id from the URL hash (event.html#ep20251122-0001) and
+ * Reads an event id from the URL hash (event.html#ep20251122T095208) and
  * gives that one event the room the sidebar panel can't: a proper record
  * section, every trace at full height, the picks, and the distance working.
  *
  * Loads waveforms.js and waves.js, NOT site.js — there is no catalog map
  * here, and site.js builds one unconditionally.
+ *
+ * Links from before 2026-10-16 carry the old positional ids
+ * (#ep20251122-0001); data/aliases.json maps them to the current ones.
  */
 
 const EV_TZ = 'America/Denver';
 const RECORD_H = 420;          // css px for the record-section canvas
+const LEGACY_ID = /^[a-z]{2}\d{8}-\d{4}$/;
 
 const localFmt = () => new Intl.DateTimeFormat(
   document.documentElement.lang || 'en',
@@ -257,10 +261,17 @@ function fail(msg) {
 
 // ── Boot ───────────────────────────────────────────────────────────
 (async function initEventPage() {
-  const id = decodeURIComponent(location.hash.slice(1));
+  let id = decodeURIComponent(location.hash.slice(1));
   if (!id) {
     fail(t('event.noId'));
     return;
+  }
+  if (LEGACY_ID.test(id)) {
+    const aliases = await loadJSON('data/aliases.json').catch(() => ({}));
+    if (aliases[id]) {
+      id = aliases[id];
+      history.replaceState(null, '', `#${id}`);
+    }
   }
 
   let ev, stations, meta;
