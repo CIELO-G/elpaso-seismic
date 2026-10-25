@@ -49,13 +49,6 @@ To draw a trace: bin `i` spans time `t0 + i*dt`; fill between `min` and
 `max`. Overlay picks at `t` on the same axis (see `drawTrace` in
 `assets/site.js`).
 
-## `aliases.json`
-
-`{ "<old event_id>": "<current event_id>" }` — ids were renumbered from
-date-plus-counter (`ep20251122-0001`) to date-plus-origin-time
-(`ep20251122T095208`). `event.html` consults this only when the id in the
-URL fails to load, so links shared before the change still resolve.
-
 ## `stations.json`
 
 `[{station, network, latitude, longitude, model}]` — station coordinates

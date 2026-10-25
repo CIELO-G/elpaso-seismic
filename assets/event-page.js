@@ -272,36 +272,16 @@ function fail(msg) {
     }
   }
 
-  /* Event ids were renumbered: `ep20251122-0001` (date + a counter) became
-   * `ep20251122T095208` (date + origin time). Links shared before that
-   * change still carry the old form, so the pipeline ships
-   * data/aliases.json mapping old to new. Try the id as given first — that
-   * is every current link, and costs one request — and only reach for the
-   * alias table when it misses, so the common path never pays for it. */
   let ev, stations, meta;
-  const load = key => Promise.all([
-    loadJSON(`data/events/${key}.json`),
-    loadJSON('data/stations.json'),
-    loadJSON('data/meta.json'),
-  ]);
-
   try {
-    [ev, stations, meta] = await load(id);
+    [ev, stations, meta] = await Promise.all([
+      loadJSON(`data/events/${id}.json`),
+      loadJSON('data/stations.json'),
+      loadJSON('data/meta.json'),
+    ]);
   } catch {
-    let alias = null;
-    try {
-      alias = (await loadJSON('data/aliases.json'))[id] || null;
-    } catch { /* no alias table shipped — fall through to the error */ }
-    if (!alias) { fail(t('event.badId', { id })); return; }
-    try {
-      [ev, stations, meta] = await load(alias);
-    } catch {
-      fail(t('event.badId', { id }));
-      return;
-    }
-    // rewrite the bar so a reshared link carries the current id, and so
-    // a reload does not pay for the lookup twice
-    history.replaceState(null, '', `#${alias}`);
+    fail(t('event.badId', { id }));
+    return;
   }
 
   currentEvent = ev;
