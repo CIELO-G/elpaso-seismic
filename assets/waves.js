@@ -21,7 +21,7 @@ const PHASE_KEYS = {
   rg: 'wave.rg',
 };
 
-const VEL = { p: 6.0, s: 3.5, rg: 1.8 };   // same nominals as the guides
+const VEL = { p: V_P, s: V_S, rg: 1.8 };   // fitted — see waveforms.js
 
 // ── Geometry ───────────────────────────────────────────────────────
 function traceFor(el) {
@@ -145,7 +145,7 @@ function showWaveExplainer(div, kind) {
     // slower shallow rock. Say so rather than printing a number that looks
     // simply wrong next to the located distance.
     const sp = a.s - a.p;
-    const est = sp * (VEL.p * VEL.s) / (VEL.p - VEL.s);
+    const est = sp * SP_K;              // fitted constant, not Vp·Vs/(Vp−Vs)
     const off = Math.abs(est - tr.distance_km) / tr.distance_km;
     facts.push(t('wave.fact.sp', { sp: sp.toFixed(2) }));
     facts.push(t(off <= 0.2 ? 'wave.fact.spClose' : 'wave.fact.spOff',

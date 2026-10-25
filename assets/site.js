@@ -15,12 +15,10 @@ let catalog = [], markers = {};
 const map = L.map('map', { zoomSnap: 0, zoomControl: false })
   .setView([31.82, -106.45], 10);
 L.control.zoom({ position: 'topright' }).addTo(map);
-L.maplibreGL({
-  style: 'https://tiles.openfreemap.org/styles/dark',
-  attribution: '&copy; <a href="https://openfreemap.org">OpenFreeMap</a> ' +
-    '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>, ' +
-    'style &copy; <a href="https://carto.com/attributions">CARTO</a>'
-}).addTo(map);
+
+// dark / light / satellite — see basemaps.js. The frame carries
+// data-basemap so the HUD, legend and map annotations restyle with it.
+addBasemapControl(map, document.querySelector('.map-frame'));
 
 function magRadius(m) { return Math.max(5, 3.5 * ((m ?? 0.5) + 1.2)); }
 
@@ -95,12 +93,72 @@ function addFullscreenControl() {
   document.addEventListener('webkitfullscreenchange', onChange);
 }
 
+/* ── Station filter ────────────────────────────────────────────────
+ * A second segmented control under the basemap switch, sharing its
+ * styling. Default is `active`: the 49 recovered nodes sit almost on
+ * top of one another at city scale and would otherwise bury the 14
+ * standing stations under a single grey smear.
+ *
+ * Layers rather than per-marker show/hide, so switching is one add and
+ * one remove however many stations there are. */
+const STA_VIEW_ORDER = ['active', 'retired', 'both'];
+const STA_VIEW_STORE = 'eps-stations';
+
+function addStationControl(map, layers, { position = 'topright' } = {}) {
+  let current = 'active';
+  try {
+    const v = localStorage.getItem(STA_VIEW_STORE);
+    if (STA_VIEW_ORDER.includes(v)) current = v;
+  } catch { /* private mode — keep the default */ }
+
+  const apply = name => {
+    current = name;
+    const want = { active: name !== 'retired', retired: name !== 'active' };
+    for (const k of ['active', 'retired']) {
+      if (want[k] && !map.hasLayer(layers[k])) layers[k].addTo(map);
+      else if (!want[k] && map.hasLayer(layers[k])) map.removeLayer(layers[k]);
+    }
+    try { localStorage.setItem(STA_VIEW_STORE, name); } catch { /* not fatal */ }
+    paint();
+  };
+
+  const ctl = L.control({ position });
+  let wrap;
+  ctl.onAdd = () => {
+    wrap = L.DomUtil.create('div', 'leaflet-control basemap-switch station-switch');
+    wrap.setAttribute('role', 'group');
+    for (const name of STA_VIEW_ORDER) {
+      const b = L.DomUtil.create('button', '', wrap);
+      b.type = 'button';
+      b.dataset.staView = name;
+      L.DomEvent.on(b, 'click', L.DomEvent.stop);
+      L.DomEvent.on(b, 'click', () => apply(name));
+    }
+    L.DomEvent.disableClickPropagation(wrap);
+    return wrap;
+  };
+  ctl.addTo(map);
+
+  function paint() {
+    if (!wrap) return;
+    wrap.setAttribute('aria-label', t('sta.label'));
+    for (const b of wrap.children) {
+      const name = b.dataset.staView;
+      b.textContent = t('sta.' + name);
+      b.classList.toggle('on', name === current);
+      b.setAttribute('aria-pressed', name === current ? 'true' : 'false');
+    }
+  }
+  apply(current);
+  if (typeof onLangChange === 'function') onLangChange(paint);
+}
+
 // ── Event detail panel ─────────────────────────────────────────────
 async function showEvent(id) {
   const ev = await loadJSON(`data/events/${id}.json`);
   document.getElementById('detail-hint').style.display = 'none';
   document.getElementById('detail-title').textContent =
-    `${typeLabel(ev.event_type)} — M${(ev.magnitude ?? 0).toFixed(1)}`;
+    `${typeLabel(ev.event_type)}, M${(ev.magnitude ?? 0).toFixed(1)}`;
   // lead with the place, not the coordinate — "4 km W of Fort Bliss" is
   // what a local can actually picture
   const where = describePlace(ev.latitude, ev.longitude);
@@ -145,19 +203,48 @@ window.siteReady = (async function init() {
   ]);
   catalog = cat;
 
+  /* ── Stations: the standing network vs recovered deployments ─────
+     data/stations.json carries no status field and never will — it is
+     overwritten wholesale by every pipeline export — so status is
+     derived here from the NETWORK CODE, which is stable and meaningful:
+
+       AM  Raspberry Shake community sensors   standing
+       EP  KIDD, the UTEP broadband station    standing
+       4B  Fairfield ZLand nodal deployment    recovered (June 2021)
+
+     The 49 nodes ran for four days in 2021 and are long since pulled
+     out of the ground; they still matter because 2021 events were
+     located with them. RETIRED_STATIONS is the escape hatch for a
+     single box that bucks its network — add the code and nothing else
+     has to change. */
+  const RETIRED_NETWORKS = new Set(['4B']);
+  const RETIRED_STATIONS = new Set([]);
+  const isRetired = s =>
+    RETIRED_STATIONS.has(s.station) || RETIRED_NETWORKS.has(s.network);
+
   document.getElementById('st-events').textContent = meta.n_events;
   document.getElementById('st-blasts').textContent = meta.n_quarry_blasts;
   document.getElementById('st-quakes').textContent = meta.n_earthquakes;
-  document.getElementById('st-stations').textContent = meta.n_stations;
+  document.getElementById('st-stations').textContent =
+    stations.filter(s => !isRetired(s)).length;
   document.getElementById('updated').textContent =
     'Catalog updated ' + meta.generated_utc.slice(0, 10) + ' (UTC)';
 
+  const staLayers = { active: L.layerGroup(), retired: L.layerGroup() };
   for (const s of stations) {
+    const retired = isRetired(s);
     L.marker([s.latitude, s.longitude], {
-      icon: L.divIcon({ className: 'sta-icon', iconSize: [12, 9] }),
+      icon: L.divIcon({
+        className: retired ? 'sta-icon sta-retired' : 'sta-icon',
+        iconSize: [12, 9],
+      }),
       title: `${s.network}.${s.station}`,
-    }).addTo(map).bindPopup(`<b>${s.network}.${s.station}</b><br>seismic station`);
+    }).bindPopup(
+      `<b>${s.network}.${s.station}</b><br>${s.model}<br>` +
+      t(retired ? 'sta.retiredNote' : 'sta.activeNote')
+    ).addTo(staLayers[retired ? 'retired' : 'active']);
   }
+  addStationControl(map, staLayers);
 
   buildEventList();
   rebuildEventList = buildEventList;
@@ -170,13 +257,13 @@ window.siteReady = (async function init() {
     if (!markers[ev.event_id]) {
     const m = L.circleMarker([ev.latitude, ev.longitude], {
       radius: magRadius(ev.magnitude),
-      color: isEq ? QUAKE : BLAST, weight: 2, opacity: 0.95,
-      fillColor: isEq ? QUAKE : BLAST, fillOpacity: 0.55,
+      ...markerStyle(isEq),            // see MARKER_THEME in basemaps.js
     }).addTo(map).bindPopup(
       `<b>${typeLabel(ev.event_type)}</b> M${(ev.magnitude ?? 0).toFixed(1)}` +
       `<br>${describePlace(ev.latitude, ev.longitude) || ''}` +
       `<br>${ev.time.replace('T', ' ').slice(0, 16)} UTC`);
     m.on('click', () => showEvent(ev.event_id));
+    m._isEq = isEq;                    // filters.js restyles by type
     markers[ev.event_id] = m;
     }
 
@@ -208,7 +295,8 @@ window.siteReady = (async function init() {
   // Frame the map on the data rather than a hard-coded centre, so the
   // catalog growing north or south doesn't leave events off-screen.
   const pts = catalog.map(e => [e.latitude, e.longitude])
-    .concat(stations.map(s => [s.latitude, s.longitude]));
+    .concat(stations.filter(s => !isRetired(s))
+                    .map(s => [s.latitude, s.longitude]));
   if (pts.length) map.fitBounds(L.latLngBounds(pts).pad(0.12));
 
   addFullscreenControl();

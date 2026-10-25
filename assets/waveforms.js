@@ -24,14 +24,28 @@ const BLAST = '#04a14a', QUAKE = '#e307dc';
  * SECTION was removed from index.html and would need putting back too. */
 const SHOW_RG = false;
 
-/* Move-out guides. A phase travelling at velocity v reaches a station
- * distance_km away at t = distance/v, so on a distance-sorted panel each
- * phase traces a straight line. These are nominal crustal velocities, not
- * a velocity model fitted to this network — they place the guides within a
- * few tenths of a second, which is all they are for. */
+/* Move-out velocities, FITTED FROM THIS CATALOG's own picks — least
+ * squares through the origin on t = distance / v:
+ *
+ *   146 P picks -> 3.94 km/s      94 S picks -> 2.53 km/s
+ *
+ * These replace the textbook 6.0 / 3.5 that used to be here. Those are
+ * whole-crust values and far too fast for these shallow local paths: at
+ * 70 km they put the P guide 6 s early, so the move-out lines visibly
+ * missed the pick dots on the record section. The fitted pair has a
+ * Vp/Vs of 1.56, so the picks are internally consistent.
+ *
+ * SP_K is the single-station distance rule, distance ≈ (S−P) × SP_K,
+ * fitted directly against 88 station pairs rather than derived from
+ * Vp·Vs/(Vp−Vs). Direct fit: 15% median error. The derived value (7.04)
+ * gives 40%, and the old textbook 8.4 gave 67%.
+ *
+ * REFIT these if the catalog grows substantially — see the README. */
+const V_P = 3.94, V_S = 2.53, SP_K = 5.66;
+
 const GUIDES = [
-  { name: 'P',  v: 6.0, color: '#ff6b6b' },
-  { name: 'S',  v: 3.5, color: '#7ee787' },
+  { name: 'P',  v: V_P, color: '#ff6b6b' },
+  { name: 'S',  v: V_S, color: '#7ee787' },
   { name: 'Rg', v: 1.8, color: '#ffd23f' },
 ].filter(g => g.name !== 'Rg' || SHOW_RG);
 
