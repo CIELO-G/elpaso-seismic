@@ -16,10 +16,11 @@ is plain HTML/CSS/JS, no build step and no framework:
 
 | file | what it does |
 |---|---|
-| `index.html` | the front page: map, story, catalog, charts |
+| `index.html` | the front page: map, background, catalog, charts |
 | `event.html` | **one event in depth** — record section, every trace, picks, locator (`event.html#<event_id>`) |
 | `assets/site.css` | all styles |
 | `assets/i18n.js` | **English/Spanish strings + `t()`** — load FIRST on every page |
+| `assets/basemaps.js` | dark / light / satellite backdrop switcher, shared by both maps |
 | `assets/places.js` | local landmark gazetteer: turns a coordinate into "4 km W of Fort Bliss" |
 | `assets/waveforms.js` | **shared** trace drawing — load before any page showing a waveform |
 | `assets/site.js` | front page only: map, event list, detail panel; publishes `window.siteReady` |
@@ -35,7 +36,8 @@ is plain HTML/CSS/JS, no build step and no framework:
 **Light page, dark instruments.** The page is light and open; the two
 things that are *readouts* — the map band at the top and the waveform
 canvases — stay black, so they read as instrument panels set into the page.
-That contrast is the look. The basemap stays OpenFreeMap `dark`.
+That contrast is the look. The map band keeps its black frame and
+caption whichever backdrop is behind it.
 
 Two tokens in `assets/site.css` are **data**, not decoration:
 
@@ -69,6 +71,67 @@ the others — emphasis, not a rainbow.
 Phase colours on the waveform canvases (`--p-wave`, `--s-wave`, `--rg-wave`)
 are tuned for **black**; the explainer panel sits on the light page and uses
 darker steps of the same hues.
+
+### Map marker contrast — validate the COMPOSITE, not the swatch
+
+A circle drawn at partial fill opacity is not its hex; it is that hex
+composited onto whatever is behind it. The markers originally used
+`fillOpacity: 0.55`, and measured:
+
+| | pure hex | at 55% fill |
+|---|---|---|
+| blast on dark map | 5.78:1 | **2.47:1** |
+| blast on light map | 3.04:1 | **1.85:1** |
+| quake on dark map | 4.96:1 | **2.13:1** |
+
+All under the 3:1 floor, on every backdrop, even though the hexes pass.
+This was missed because the validator was run on the swatch. **When a mark
+is drawn at <100% opacity, composite it against its background first.**
+
+Current approach (`MARKER_THEME` in `assets/basemaps.js`):
+
+- Near-opaque fills (0.90–0.92), so what renders is close to the hex.
+- A **darker emerald step `#049143` on the light backdrop** — `#04a14a`
+  cannot clear 3:1 against near-white at any opacity.
+- A stroke that contrasts with the *backdrop*, not the fill.
+
+**Satellite is the case no flat colour solves.** Against imagery the same
+green measures 1.65:1 on desert, 3.14:1 on vegetation and 2.10:1 on bright
+sand — there is no single value that works, because the backdrop is not one
+value. The marker is therefore defined by its **outline**: a white stroke
+plus a dark drop-shadow, with the fill carrying identity only.
+
+`markerStyle()` is the single source of truth — marker creation and the
+filter-dimming pass both call it, so they cannot drift apart, and switching
+backdrop re-runs `applyFilters()` to restyle everything.
+
+### Active and retired stations
+
+`data/stations.json` has **no status field**, and adding one here would not
+survive — `data/` is overwritten wholesale by every pipeline export. So
+status is derived in `site.js` from the **network code**, which is stable:
+
+| network | what it is | status |
+|---|---|---|
+| `AM` | Raspberry Shake community sensors | standing |
+| `EP` | KIDD, the UTEP broadband station | standing |
+| `4B` | Fairfield ZLand nodal deployment | recovered, June 2021 |
+
+The 49 nodes ran for four days in June 2021 and were pulled out of the
+ground afterwards. They still belong on the map, because the 2021 events
+in the catalog were located with them — but they are **off by default**:
+at city scale they sit almost on top of one another and bury the 14
+standing stations under a grey smear. The switcher under the basemap
+control offers Active / Retired / Both, and the choice is kept in
+`localStorage`.
+
+`RETIRED_STATIONS` in `site.js` is the escape hatch for a single box that
+bucks its network — add the station code and nothing else has to change.
+
+Two consequences worth knowing. The HUD counts **active** stations, not
+`meta.n_stations`, which is 63 and would contradict what the map shows.
+And `event.html` is unaffected: its locator only ever draws the stations
+that recorded *that* event, so 2021 events still show their nodes.
 
 ### Layout notes
 
@@ -151,16 +214,48 @@ Any static file server works:
     python3 -m http.server 8080
     # -> http://localhost:8080
 
-Basemap tiles come from OpenFreeMap (keyless — do NOT add API-keyed tile
-providers here; this is a public repo and a public site).
+### Base maps
+
+Two backdrops, switchable on either map (`assets/basemaps.js`):
+
+| backdrop | source | kind |
+|---|---|---|
+| Street (default) | OpenFreeMap `positron` | maplibre vector |
+| Satellite | Esri World Imagery | raster tiles |
+
+There was a third, OpenFreeMap `dark`, and it was the default. It was
+dropped because the two backdrops people actually reach for are a street
+map to find a place and imagery to see the ground. Anything still holding
+`dark` or `light` in `localStorage` is mapped onto `street` by
+`LEGACY_BASEMAP` rather than silently falling through to the default —
+the branch is there so the reason is visible.
+
+**Keyless only — do NOT add API-keyed tile providers.** This is a public
+repo and a public site, so a key here is a key published. That rules out
+Mapbox, MapTiler, Google and Bing imagery.
+
+Esri World Imagery was chosen over the USGS National Map because it covers
+**both sides of the border**. Two of the five quarry clusters are in
+Juárez, and a US-only imagery source thins out exactly where half the data
+is. Esri requires attribution, which the layer carries.
+
+Note the two layer kinds: dark and light are *vector* styles rendered
+through the maplibre GL bridge, satellite is plain *raster* tiles. Anything
+that touches the layer must not assume one or the other.
+
+Per-backdrop colours live in `site.css`, keyed off `data-basemap` on the
+frame — including the Leaflet SVG paths, because CSS beats the
+presentation attributes Leaflet writes inline. This matters: the pale grey
+station triangles and quarry rings are invisible on the light backdrop and
+need a dark halo on imagery.
 
 ## Roadmap (student project)
 
 Built:
 
 - [x] Time-of-day + day-of-week histograms. Binned in `America/Denver`,
-      not UTC — with real DST applied, **21 of 41 blasts** land in the
-      17:00 hour and 100% fall inside the work day. A fixed −6 offset
+      not UTC — with real DST applied, **35 of 98 blasts** land in the
+      17:00 hour and 97% fall inside the work day. A fixed −6 offset
       smears that peak across two bars and understates it by half.
 - [x] Magnitude and events-per-month charts.
 - [x] Per-quarry event clusters — single-link at 3 km, blasts only.

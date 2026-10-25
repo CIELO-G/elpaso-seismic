@@ -176,7 +176,6 @@ function bin(keyOf, keys, labelOf, tipOf) {
 }
 
 const hourLabel = h => (h % 12 === 0 ? 12 : h % 12) + (h < 12 ? 'a' : 'p');
-const prettyHour = h => `${h % 12 === 0 ? 12 : h % 12} ${h < 12 ? 'a.m.' : 'p.m.'}`;
 
 function hourBars() {
   return bin(ev => ev.local.hour, [...Array(24).keys()],
@@ -214,49 +213,6 @@ function magBars() {
   return bin(ev => (ev.magnitude == null ? null : binOf(ev.magnitude)), keys,
     k => (Number(k) % 0.5 === 0 ? Number(k).toFixed(1) : ''),
     (k, n) => `M${Number(k).toFixed(2)}–${(Number(k) + 0.25).toFixed(2)} · ${plural(n, 'event')}`);
-}
-
-// ── The headline claim, generated from the data ────────────────────
-// Always describes the whole catalog, never the filtered view — it is the
-// standing claim the page makes, not a caption for the current state. It
-// is computed rather than written down so it cannot drift out of date when
-// the pipeline pushes a new catalog.
-function renderHeadline() {
-  const blasts = EVENTS.filter(e => e.event_type !== 'earthquake');
-  const fig = document.getElementById('hero-figure');
-  const figLabel = document.getElementById('hero-figure-label');
-  const cap = document.getElementById('hero-caption');
-  if (!blasts.length || !fig) return;
-
-  const byHour = new Map();
-  for (const b of blasts) byHour.set(b.local.hour, (byHour.get(b.local.hour) || 0) + 1);
-  let peakHour = 0, peakN = 0;
-  for (const [h, n] of byHour) if (n > peakN) { peakN = n; peakHour = h; }
-
-  const pct = Math.round(100 * peakN / blasts.length);
-  const inHours = blasts.filter(b => b.local.hour >= 6 && b.local.hour < 19).length;
-  const workPct = Math.round(100 * inHours / blasts.length);
-
-  fig.textContent = pct + '%';
-  figLabel.textContent = t('story.figureLabel', { hour: prettyHour(peakHour) });
-
-  let s = t('story.caption',
-    { peak: peakN, total: blasts.length, pct: workPct });
-
-  const offHours = EVENTS.filter(e =>
-    e.event_type === 'earthquake' && (e.local.hour < 6 || e.local.hour >= 19));
-  if (offHours.length) {
-    const q = offHours[0];
-    const hh = q.local.hour % 12 === 0 ? 12 : q.local.hour % 12;
-    // names the mark's colour, so it has to change when the palette does
-    // "a.m." already ends in a period and the sentence supplies its own,
-    // so trim it rather than printing "2:52 a.m.."
-    s += t('story.captionQuake', {
-      date: q.time.slice(0, 10),
-      time: `${hh}:${q.local.minute} ${q.local.hour < 12 ? 'a.m' : 'p.m'}`,
-    });
-  }
-  if (cap) cap.textContent = s;
 }
 
 // ── Tooltip ────────────────────────────────────────────────────────
@@ -344,13 +300,12 @@ function wire(root) {
   if (!document.getElementById('chart-hour')) return;
   await filtersReady;
 
-  renderHeadline();
   drawAll();
   // the hero chart lives outside #patterns now, so wire the whole document —
   // every handler is scoped by closest('.bar') anyway
   wire(document.body);
   onFilterChange(drawAll);
-  onLangChange(() => { renderHeadline(); drawAll(); });
+  onLangChange(() => { drawAll(); });
 
   let t;
   window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(drawAll, 150); });

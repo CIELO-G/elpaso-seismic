@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>El Paso Seismic Network</title>
-<meta name="description" content="Public catalog of seismic events recorded by the El Paso seismic network — quarry blasts and earthquakes in the El Paso / Juárez region.">
+<meta name="description" content="Public catalog of seismic events recorded by the El Paso seismic network: quarry blasts and earthquakes in the El Paso / Juárez region.">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
@@ -25,7 +25,7 @@
     </svg>
     <div>
       <div class="brand-name" data-i18n="brand.name">El Paso Seismic Network</div>
-      <div class="brand-sub" data-i18n="brand.sub">Public event catalog &mdash; updated daily</div>
+      <div class="brand-sub" data-i18n="brand.sub">Public event catalog, updated daily</div>
     </div>
   </div>
   <div class="topbar-right">
@@ -46,16 +46,17 @@
 
     <!-- catalog totals read out over the map like an instrument panel -->
     <div class="map-hud">
-      <div class="hud-cell"><b id="st-events">&mdash;</b><span data-i18n="hud.events">events</span></div>
-      <div class="hud-cell"><b id="st-blasts">&mdash;</b><span data-i18n="hud.blasts">blasts</span></div>
-      <div class="hud-cell"><b id="st-quakes">&mdash;</b><span data-i18n="hud.quakes">quakes</span></div>
-      <div class="hud-cell"><b id="st-stations">&mdash;</b><span data-i18n="hud.stations">stations</span></div>
+      <div class="hud-cell"><b id="st-events">&hellip;</b><span data-i18n="hud.events">events</span></div>
+      <div class="hud-cell"><b id="st-blasts">&hellip;</b><span data-i18n="hud.blasts">blasts</span></div>
+      <div class="hud-cell"><b id="st-quakes">&hellip;</b><span data-i18n="hud.quakes">quakes</span></div>
+      <div class="hud-cell"><b id="st-stations">&hellip;</b><span data-i18n="hud.stations">stations</span></div>
     </div>
 
     <div class="map-legend">
       <span><i class="key blast"></i><span data-i18n="legend.blast">Quarry blast</span></span>
       <span><i class="key eq"></i><span data-i18n="legend.quake">Earthquake</span></span>
       <span><i class="key sta"></i><span data-i18n="legend.station">Station</span></span>
+      <span><i class="key sta off"></i><span data-i18n="legend.retired">Retired</span></span>
       <span><i class="key ring"></i><span data-i18n="legend.cluster">Quarry cluster</span></span>
     </div>
   </div>
@@ -65,19 +66,23 @@
 
 <main>
 
-  <!-- ── The finding ──────────────────────────────────────────────── -->
+  <!-- ── Background and goal ────────────────────────────────── -->
   <section class="story" id="story">
     <div class="story-copy">
-      <p class="eyebrow" data-i18n="story.eyebrow">El Paso &middot; Ciudad Ju&aacute;rez &middot; since 2025</p>
-      <h1 data-i18n="story.h1">The ground here keeps office hours.</h1>
-      <p class="story-sub" data-i18n="story.sub">Nearly everything this network records is a quarry blast.</p>
+      <p class="eyebrow" data-i18n="story.eyebrow">El Paso &middot; Ciudad Ju&aacute;rez &middot; a student project at UTEP</p>
+      <p class="story-sub" data-i18n="story.lead">El Paso and Ciudad Ju&aacute;rez are one metropolitan area built along the Franklin Mountains and the fault that runs with them.</p>
 
-      <div class="hero-figure">
-        <b id="hero-figure">&mdash;</b>
-        <span id="hero-figure-label"></span>
+      <div class="background">
+        <p data-i18n="story.bg1">Earthquakes here are rare, which also means there is no local record of them.</p>
+        <p data-i18n="story.bg2">This network exists to build that record.</p>
       </div>
 
-      <p class="hero-caption" id="hero-caption"></p>
+      <h2 class="goal-h" data-i18n="story.goalH">What this site is for</h2>
+      <ol class="goals">
+        <li data-i18n="story.goal1"></li>
+        <li data-i18n="story.goal2"></li>
+        <li data-i18n="story.goal3"></li>
+      </ol>
     </div>
 
     <figure class="hero-chart">
@@ -221,15 +226,25 @@
     <div class="section-head">
       <h2 data-i18n="about.h2">About this network</h2>
     </div>
-    <div class="prose">
-      <p data-i18n="about.body"></p>
+    <div class="about-grid">
+      <div class="prose">
+        <p data-i18n="about.body"></p>
+      </div>
+      <div class="partner">
+        <a href="https://www.cielog.org/" target="_blank" rel="noopener">
+          <img src="assets/cielo-g.png" width="800" height="722"
+               alt="CIELO-G: Connecting Geoscience &amp; Community" loading="lazy">
+        </a>
+        <p><a href="https://www.cielog.org/" target="_blank" rel="noopener"
+              data-i18n="about.partner">Built in partnership with CIELO-G.</a></p>
+      </div>
     </div>
   </section>
 
 </main>
 
 <footer class="footer">
-  <span id="updated">&mdash;</span>
+  <span id="updated"></span>
   <span class="foot-sep">&middot;</span>
   <a href="https://github.com/CIELO-G/elpaso-quake-network" data-i18n="foot.pipeline">pipeline source</a>
   <span class="foot-sep">&middot;</span>
@@ -242,6 +257,7 @@
      filters.js owns the shared filter state; clusters.js stamps site
      membership onto the catalog before charts.js first draws. -->
 <script src="assets/i18n.js"></script>
+<script src="assets/basemaps.js"></script>
 <script src="assets/places.js"></script>
 <script src="assets/waveforms.js"></script>
 <script src="assets/site.js"></script>
