@@ -17,13 +17,18 @@ times are UTC ISO-8601. Only **confirmed** events are exported.
 
 | field | type | notes |
 |---|---|---|
-| `event_id` | string | stable id, e.g. `ep20251122-0001` |
+| `event_id` | string | stable id: source + origin time UTC, e.g. `ep20251122T095208` (see `aliases.json`) |
 | `time` | string | origin time UTC |
 | `latitude`, `longitude` | number | degrees |
 | `depth_km` | number\|null | poorly resolved for shallow blasts |
 | `magnitude` | number\|null | local magnitude ML |
 | `event_type` | string | `quarry_blast` \| `earthquake` |
 | `num_picks` | int | phase picks used |
+
+## `aliases.json` — object
+
+Old id → current id. Ids issued before 2026-10-16 were positional
+(`ep20251122-0001`); links using them still resolve through this map.
 
 ## `events/<event_id>.json`
 
