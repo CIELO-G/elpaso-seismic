@@ -23,36 +23,39 @@
  */
 
 :root {
-  /* light page */
-  --bg:         #f5f6f4;
-  --surface:    #ffffff;
-  --surface-2:  #eef0ec;
-  --border:     #e3e5e1;
-  --border-2:   #cfd2cc;
+  /* black page */
+  --bg:         #000000;
+  --surface:    #101114;
+  --surface-2:  #191a1e;
+  --border:     #26282d;
+  --border-2:   #35383f;
 
-  /* ink — all clear 4.5:1 on the page and on white */
-  --ink:        #14171a;
-  --ink-2:      #545c68;
-  --ink-3:      #616974;
+  /* ink — all clear 4.5:1 on the page and on both card surfaces */
+  --ink:        #f2f4f7;
+  --ink-2:      #a8aeb8;
+  --ink-3:      #868e99;
 
-  /* dark instrument surfaces (map band, waveform canvases) */
+  /* instrument surfaces (map band, waveform canvases). On a black page
+     these barely differ from the ground, so the BORDER does the work of
+     separating them, not the fill. */
   --dark:        #0c0c0c;
-  --dark-2:      #161719;
-  --dark-border: #2a2c30;
-  --dark-ink:    #eef1f4;
-  --dark-ink-2:  #9aa3ae;
+  --dark-2:      #191a1e;
+  --dark-border: #35383f;
+  --dark-ink:    #f2f4f7;
+  --dark-ink-2:  #a8aeb8;
 
-  /* data — one pair, valid on both surfaces */
+  /* data — unchanged; both clear 3:1 on every surface here */
   --blast:      #04a14a;
   --quake:      #e307dc;
 
   /* chart chrome */
-  --grid:       #e8eae6;
-  --axis:       #cfd2cc;
+  --grid:       #1c1e22;
+  --axis:       #35383f;
 
-  /* UI accent — deep emerald, never used as a data mark */
-  --accent:     #0e7a3c;
-  --accent-dim: rgba(14,122,60,.10);
+  /* UI accent — emerald stepped up for a black ground; the light-page
+     #0e7a3c only reaches 3.5:1 here and fails as link text */
+  --accent:     #2eb862;
+  --accent-dim: rgba(46,184,98,.14);
 
   /* annotation + phase colours (on the black instrument surfaces) */
   --ring:       #c9d1d9;
@@ -68,6 +71,7 @@
   --maxw:   1200px;
   --ease:   cubic-bezier(.22,.61,.36,1);
 }
+
 
 * { box-sizing: border-box; margin: 0; }
 
@@ -118,7 +122,7 @@ summary:focus-visible, .ev-row:focus-visible, .trace:focus-visible {
   position: sticky; top: 0; z-index: 900;
   display: flex; align-items: center; justify-content: space-between;
   gap: 20px; padding: 12px 26px;
-  background: rgba(245,246,244,.86);
+  background: rgba(0,0,0,.86);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
 }
@@ -161,12 +165,35 @@ main > section:first-child { margin-top: 30px; }
 .prose p { margin-bottom: 12px; }
 .prose p:last-child { margin-bottom: 0; }
 
+/* About: copy on the left, the partner's mark on the right. The logo is
+   the full-colour PNG on transparent, so it sits on the light page as is. */
+.about-grid {
+  display: grid; grid-template-columns: minmax(0,1fr) auto;
+  gap: 40px; align-items: center;
+}
+.partner { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.partner img { width: 190px; max-width: 100%; height: auto; display: block; }
+.partner p a { color: inherit; text-decoration-color: var(--border); text-underline-offset: 3px; }
+.partner p a:hover { color: var(--accent); }
+.partner p { color: var(--ink-3); font-size: 13px; text-align: center; max-width: 24ch; }
+@media (max-width: 720px) {
+  .about-grid { grid-template-columns: 1fr; gap: 24px; }
+  .partner { align-items: flex-start; }
+  .partner p { text-align: left; }
+  .partner img { width: 150px; }
+}
+
 /* ── Map band — the one black slab, first thing on the page ─────── */
 /* A sibling of <main>, not a breakout from it. `width: 100vw` counts the
    scrollbar while the layout viewport does not, so a vw-based full-bleed
    overflows horizontally by exactly the scrollbar width. */
 
-.map-hero { padding: 0 0 6px; background: var(--dark); }
+/* The band sits on the PAGE, not on the map. It used to inherit the dark
+   ground so it blended with a black basemap, but that becomes a stray
+   black bar under the light basemap, and it pushed the caption text to
+   marginal contrast. The map frame carries the backdrop; the caption
+   below it belongs to the page. */
+.map-hero { padding: 0 0 6px; background: var(--bg); }
 .map-frame { position: relative; overflow: hidden; }
 #map { height: clamp(420px, 62vh, 760px); background: var(--dark); }
 
@@ -230,29 +257,37 @@ main > section:first-child { margin-top: 30px; }
   display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.1fr);
   gap: 44px; align-items: start;
 }
-.story-copy h1 {
-  font-size: clamp(32px, 4.6vw, 52px);
-  line-height: 1.04; font-weight: 700; letter-spacing: -.033em;
-  margin: 12px 0 16px;
-}
 .story-sub { color: var(--ink-2); font-size: 16.5px; max-width: 46ch; }
 
-/* The one hero figure on the page. Proportional figures, not tabular —
-   tabular digits make a big standalone number look loose. */
-.hero-figure {
-  display: flex; align-items: baseline; gap: 16px;
-  margin: 26px 0 14px; padding-top: 22px;
+/* ── Background and goal ────────────────────────────────
+   Replaces the hero figure inside .story-copy. The rule above the goal
+   heading echoes the one the hero figure used to carry, so the left
+   column keeps the same vertical rhythm against the chart beside it. */
+.background { margin-top: 22px; display: flex; flex-direction: column; gap: 12px; }
+.background p {
+  color: var(--ink-2); font-size: 15px; max-width: 52ch; line-height: 1.62;
+}
+.goal-h {
+  margin: 26px 0 14px; padding-top: 20px;
   border-top: 2px solid var(--ink);
+  font-size: 17px; font-weight: 700; letter-spacing: -.012em;
 }
-.hero-figure b {
-  font-size: clamp(48px, 6.6vw, 74px); font-weight: 700;
-  line-height: 1; letter-spacing: -.04em; color: var(--blast);
-  font-variant-numeric: proportional-nums;
+.goals {
+  margin: 0; padding-left: 0; list-style: none; counter-reset: goal;
+  display: flex; flex-direction: column; gap: 13px; max-width: 52ch;
 }
-.hero-figure span {
-  color: var(--ink-2); font-size: 14.5px; max-width: 22ch; line-height: 1.35;
+.goals li {
+  counter-increment: goal; position: relative; padding-left: 28px;
+  color: var(--ink-2); font-size: 15px; line-height: 1.55;
 }
-.hero-caption { color: var(--ink-3); font-size: 13.5px; max-width: 50ch; }
+.goals li::before {
+  content: counter(goal); position: absolute; left: 0; top: 1px;
+  font-size: 12px; font-weight: 700; color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The station switch sits under the basemap switch in the same corner. */
+.station-switch { margin-top: 6px; }
 
 /* ── Cards ──────────────────────────────────────────────────────── */
 
@@ -291,7 +326,7 @@ main > section:first-child { margin-top: 30px; }
 .xtick { text-anchor: middle; }
 
 .bar-n { text-anchor: middle; fill: var(--ink); font-size: 10.5px; opacity: 0; }
-.band { fill: #14171a; opacity: .045; }
+.band { fill: #ffffff; opacity: .05; }
 .band-label { opacity: .75; font-size: 10px; letter-spacing: .08em; }
 
 /* the single direct label on the peak bar — selective, never every point */
@@ -301,13 +336,13 @@ main > section:first-child { margin-top: 30px; }
 .bar { cursor: pointer; }
 .bar .hit { fill: transparent; }
 .bar .seg { transition: opacity .16s var(--ease), filter .16s var(--ease); }
-.bar:hover .hit { fill: #14171a; fill-opacity: .05; }
+.bar:hover .hit { fill: #ffffff; fill-opacity: .06; }
 .bar:hover .seg { filter: brightness(1.12) saturate(1.15); }
 .bar:hover .bar-n, .bar:focus-visible .bar-n { opacity: 1; }
 .bar.dim .seg { opacity: .22; }
 .bar:focus { outline: none; }
 .bar:focus-visible .hit {
-  fill: #14171a; fill-opacity: .06;
+  fill: #ffffff; fill-opacity: .07;
   stroke: var(--accent); stroke-width: 1.5;
 }
 
@@ -320,10 +355,11 @@ main > section:first-child { margin-top: 30px; }
 
 .chart-tip {
   position: fixed; z-index: 1100; pointer-events: none;
-  background: var(--ink); color: #fff;
+  background: #000; color: var(--ink);
+  border: 1px solid var(--border-2);
   border-radius: 8px; padding: 7px 11px;
   font-size: 12px; font-family: var(--mono);
-  white-space: nowrap; box-shadow: 0 10px 28px rgba(20,23,26,.22);
+  white-space: nowrap; box-shadow: 0 10px 28px rgba(0,0,0,.7);
 }
 
 /* ── Legend / keys ──────────────────────────────────────────────── */
@@ -345,6 +381,8 @@ main > section:first-child { margin-top: 30px; }
   border-left: 5px solid transparent; border-right: 5px solid transparent;
   border-top: 8px solid var(--ring);
 }
+/* matches .sta-icon.sta-retired on the map */
+.key.sta.off { opacity: .45; }
 /* a swatch on the dark legend needs an edge to separate it from black */
 .map-legend .key.blast,
 .map-legend .key.eq { box-shadow: 0 0 0 1px rgba(255,255,255,.2); }
@@ -472,9 +510,9 @@ main > section:first-child { margin-top: 30px; }
 .we-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--ink-3); }
 /* darker steps of the phase hues — the light panel needs them, the black
    canvas needs the bright ones */
-.we-dot.p  { background: #d93a3a; }
-.we-dot.s  { background: #1f9d45; }
-.we-dot.rg { background: #b07d00; }
+.we-dot.p  { background: var(--p-wave); }
+.we-dot.s  { background: var(--s-wave); }
+.we-dot.rg { background: var(--rg-wave); }
 .we-close {
   background: none; border: 0; color: var(--ink-3); cursor: pointer;
   font-size: 18px; line-height: 1; padding: 0 2px;
@@ -503,7 +541,7 @@ main > section:first-child { margin-top: 30px; }
 }
 .site-card:hover {
   border-color: var(--ink-3); transform: translateY(-3px);
-  box-shadow: 0 8px 22px rgba(20,23,26,.09);
+  box-shadow: 0 8px 22px rgba(0,0,0,.6);
 }
 .site-card.active {
   border-color: var(--accent); background: var(--accent-dim);
@@ -551,7 +589,7 @@ code {
   transition: border-color .16s var(--ease), box-shadow .16s var(--ease);
 }
 .faq details:hover { border-color: var(--border-2); }
-.faq details[open] { border-color: var(--ink-3); box-shadow: 0 4px 16px rgba(20,23,26,.06); }
+.faq details[open] { border-color: var(--ink-3); box-shadow: 0 4px 16px rgba(0,0,0,.5); }
 .faq summary { cursor: pointer; color: var(--ink); font-weight: 640; font-size: 14.5px; }
 .faq summary::marker { color: var(--accent); }
 .faq details p { margin-top: 10px; font-size: 14px; color: var(--ink-2); }
@@ -602,6 +640,14 @@ code {
   border-top: 9px solid var(--ring); filter: drop-shadow(0 0 2px #000);
 }
 
+/* Retired stations — temporary deployments that have been recovered.
+   The same triangle, drained of weight, so the standing network still
+   reads first when both are shown at once. */
+.sta-icon.sta-retired { opacity: .45; }
+.map-frame[data-basemap="street"] .sta-icon.sta-retired {
+  border-top-color: #6b7682;
+}
+
 /* ── Reveal on scroll (applied from JS, so no-JS stays visible) ─── */
 
 .reveal { opacity: 0; transform: translateY(16px); }
@@ -645,7 +691,6 @@ code {
 
   #event-list { max-height: 420px; }
   .site-list { grid-template-columns: 1fr; }
-  .hero-figure { flex-wrap: wrap; gap: 10px; }
   .section-head h2 { font-size: 20px; }
   .footer { padding: 20px 15px; }
 }
@@ -702,8 +747,8 @@ code {
 }
 .record-legend span { display: inline-flex; align-items: center; gap: 7px; }
 .key-line { width: 16px; height: 0; border-top: 2px dashed; display: inline-block; }
-.key-line.p { border-color: #d93a3a; }
-.key-line.s { border-color: #1f9d45; }
+.key-line.p { border-color: var(--p-wave); }
+.key-line.s { border-color: var(--s-wave); }
 .key-dot {
   width: 9px; height: 9px; border-radius: 50%; display: inline-block;
   background: var(--ink-2);
@@ -736,8 +781,8 @@ code {
   font-family: var(--mono); font-weight: 700; font-size: 12px;
   border-radius: 4px; padding: 1px 6px;
 }
-.phase.p { background: rgba(217,58,58,.12); color: #b32b2b; }
-.phase.s { background: rgba(31,157,69,.12); color: #17803a; }
+.phase.p { background: rgba(255,107,107,.16); color: #ff8585; }
+.phase.s { background: rgba(126,231,135,.16); color: #8ef09a; }
 
 .working { margin-top: 22px; }
 .working h3 { font-size: 15px; font-weight: 660; margin-bottom: 8px; }
@@ -827,3 +872,84 @@ code {
   .dyfi { padding: 18px 16px; }
   .dyfi h3 { font-size: 16px; }
 }
+
+/* ── Base map switcher ─────────────────────────────────────────────
+   Two backdrops (assets/basemaps.js). Everything drawn ON the map has
+   to survive both, so the annotation colours key off data-basemap
+   on the .map-frame. Leaflet writes stroke/fill as presentation
+   attributes, and CSS beats those, so even the SVG paths restyle here. */
+
+.basemap-switch {
+  display: flex; gap: 1px; overflow: hidden;
+  background: var(--dark-border);
+  border: 1px solid var(--dark-border); border-radius: 7px;
+  box-shadow: 0 1px 5px rgba(0,0,0,.4);
+}
+.basemap-switch button {
+  background: rgba(12,12,12,.92); color: var(--dark-ink-2);
+  border: 0; cursor: pointer; padding: 5px 10px;
+  font: inherit; font-size: 11px; font-weight: 600; letter-spacing: .02em;
+  white-space: nowrap; line-height: 1.4;
+  transition: background .14s var(--ease), color .14s var(--ease);
+}
+.basemap-switch button:hover { background: #1c1d20; color: var(--dark-ink); }
+.basemap-switch button.on { background: var(--accent); color: #fff; }
+.basemap-switch button:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: -2px; z-index: 1;
+}
+
+/* ── Backdrop-specific map styling ─────────────────────────────── */
+
+/* while tiles load, match the backdrop instead of flashing black */
+.map-frame[data-basemap="street"] #map,
+.map-frame[data-basemap="street"] #event-map { background: #e8eae6; }
+.map-frame[data-basemap="satellite"] #map,
+.map-frame[data-basemap="satellite"] #event-map { background: #2b2a26; }
+
+/* Station triangles and quarry rings are a pale grey that reads well on
+   imagery, but disappears on the street backdrop. */
+.map-frame[data-basemap="street"] .sta-icon {
+  border-top-color: #3d4651;
+  filter: drop-shadow(0 0 1px rgba(255,255,255,.9));
+}
+.map-frame[data-basemap="street"] .leaflet-tooltip.site-tag {
+  color: #1d2630;
+  text-shadow: 0 0 5px #fff, 0 0 2px #fff;
+}
+.map-frame[data-basemap="street"] path.site-ring { stroke: #55606d; }
+
+/* On imagery everything needs separating from a busy, unpredictable
+   backdrop — a dark halo does it without touching the data hues. */
+.map-frame[data-basemap="satellite"] .sta-icon {
+  filter: drop-shadow(0 0 2px #000) drop-shadow(0 0 4px rgba(0,0,0,.8));
+}
+.map-frame[data-basemap="satellite"] .leaflet-tooltip.site-tag {
+  text-shadow: 0 0 6px #000, 0 0 3px #000, 0 0 1px #000;
+}
+.map-frame[data-basemap="satellite"] path.site-ring {
+  stroke: #ffffff;
+  filter: drop-shadow(0 0 2px rgba(0,0,0,.9));
+}
+/* event circles keep their validated hues; the halo is separation only */
+.map-frame[data-basemap="satellite"] path.leaflet-interactive:not(.site-ring) {
+  filter: drop-shadow(0 0 2px rgba(0,0,0,.85));
+}
+
+@media (max-width: 640px) {
+  .basemap-switch button { padding: 5px 8px; font-size: 10px; }
+}
+
+/* ── Bold text on the dark surfaces ────────────────────────────────
+   The page is light, so `b, strong` is globally set to the dark ink
+   token. That rule beats the inherited colour on anything with a DARK
+   background, so a <b> inside a map popup came out near-black on
+   near-black — present, but only visible once you selected it. Every
+   dark-surfaced component needs the light ink restated. */
+
+.leaflet-popup-content b,
+.leaflet-popup-content strong,
+.map-hud b,
+.chart-tip b,
+.wave-readout b { color: var(--dark-ink); }
+
+.leaflet-popup-content a { color: var(--accent); }

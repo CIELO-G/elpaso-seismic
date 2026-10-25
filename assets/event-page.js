@@ -124,11 +124,11 @@ function renderHead(ev) {
   const evTime = new Date(ev.time);     // not `t` - that name is the translator
   const label = typeLabel(ev.event_type);
 
-  document.title = `${label} M${(ev.magnitude ?? 0).toFixed(1)} — El Paso Seismic Network`;
+  document.title = `${label} M${(ev.magnitude ?? 0).toFixed(1)} | El Paso Seismic Network`;
   document.getElementById('ev-eyebrow').textContent =
     label + ' · ' + ev.event_id;
   document.getElementById('ev-title').textContent =
-    `${label} — M${(ev.magnitude ?? 0).toFixed(1)}`;
+    `${label}, M${(ev.magnitude ?? 0).toFixed(1)}`;
   const where = describePlace(ev.latitude, ev.longitude);
   document.getElementById('ev-sub').textContent =
     (where ? where + ' · ' : '') +
@@ -136,7 +136,7 @@ function renderHead(ev) {
     `${ev.time.replace('T', ' ').slice(0, 19)} UTC`;
 
   const facts = [
-    [t('event.magnitude'), ev.magnitude == null ? '—' : 'M' + ev.magnitude.toFixed(2)],
+    [t('event.magnitude'), ev.magnitude == null ? 'n/a' : 'M' + ev.magnitude.toFixed(2)],
     [t('event.location'), `${ev.latitude.toFixed(3)}, ${ev.longitude.toFixed(3)}`],
     [t('event.stations'), ev.traces.length],
     [t('event.phasePicks'), ev.num_picks],
@@ -162,16 +162,16 @@ function renderPicks(ev) {
        <td>${esc(r.station)}</td>
        <td><span class="phase ${r.phase === 'P' ? 'p' : 's'}">${esc(r.phase)}</span></td>
        <td class="num">+${r.t.toFixed(2)} s</td>
-       <td class="num">${r.d == null ? '—' : r.d.toFixed(1) + ' km'}</td>
+       <td class="num">${r.d == null ? 'n/a' : r.d.toFixed(1) + ' km'}</td>
      </tr>`).join('')}</tbody>`;
 
   // The single-station distance rule, worked through on this event's own
   // numbers. It assumes a deep crustal path, so it overshoots for nearby
   // stations whose waves stay in slower shallow rock — say so rather than
   // printing a number that just looks wrong next to the located distance.
-  const vp = GUIDES.find(g => g.name === 'P')?.v ?? 6.0;
-  const vs = GUIDES.find(g => g.name === 'S')?.v ?? 3.5;
-  const k = (vp * vs) / (vp - vs);
+  // SP_K is fitted against this catalog's own station pairs (see
+  // waveforms.js); the textbook Vp·Vs/(Vp−Vs) was out by 67% at the median.
+  const k = SP_K;
 
   const pairs = ev.traces.map(tr => {
     const mine = ev.picks.filter(p => p.station === tr.station);
@@ -186,7 +186,7 @@ function renderPicks(ev) {
   host.innerHTML =
     `<div class="working">
        <h3>${t('event.spH3')}</h3>
-       <p>${t('event.spBody', { k: k.toFixed(1), vp, vs })}</p>
+       <p>${t('event.spBody', { k: k.toFixed(1) })}</p>
        <table class="picks-table"><thead><tr>
          <th>${t('event.thStation')}</th><th>S&minus;P</th>
          <th>${t('event.thEstimated')}</th><th>${t('event.thLocated')}</th><th></th>
@@ -208,12 +208,7 @@ function renderPicks(ev) {
 function renderLocator(ev, stations) {
   const used = new Set(ev.traces.map(t => t.station));
   const map = L.map('event-map', { zoomSnap: 0, scrollWheelZoom: false });
-  L.maplibreGL({
-    style: 'https://tiles.openfreemap.org/styles/dark',
-    attribution: '&copy; <a href="https://openfreemap.org">OpenFreeMap</a> ' +
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>, ' +
-      'style &copy; <a href="https://carto.com/attributions">CARTO</a>',
-  }).addTo(map);
+  addBasemapControl(map, document.querySelector('.locator-frame'));
 
   const pts = [[ev.latitude, ev.longitude]];
   for (const s of stations) {
@@ -229,11 +224,14 @@ function renderLocator(ev, stations) {
   }
 
   const isEq = ev.event_type === 'earthquake';
-  L.circleMarker([ev.latitude, ev.longitude], {
+  const evMarker = L.circleMarker([ev.latitude, ev.longitude], {
     radius: Math.max(7, 3.5 * ((ev.magnitude ?? 0.5) + 1.2)),
-    color: isEq ? QUAKE : BLAST, weight: 2, opacity: 1,
-    fillColor: isEq ? QUAKE : BLAST, fillOpacity: 0.6,
+    ...markerStyle(isEq),
   }).addTo(map).bindPopup(`<b>${typeLabel(ev.event_type)}</b>`);
+  // restyle when the backdrop changes, same as the main map
+  if (typeof onBasemapChange === 'function') {
+    onBasemapChange(() => evMarker.setStyle(markerStyle(isEq)));
+  }
 
   map.fitBounds(L.latLngBounds(pts).pad(0.25));
 
@@ -263,21 +261,52 @@ function fail(msg) {
     return;
   }
 
+  /* Event ids were renumbered: `ep20251122-0001` (date + a counter) became
+   * `ep20251122T095208` (date + origin time). Links shared before that
+   * change still carry the old form, so the pipeline ships
+   * data/aliases.json mapping old to new. Try the id as given first — that
+   * is every current link, and costs one request — and only reach for the
+   * alias table when it misses, so the common path never pays for it. */
   let ev, stations, meta;
+  const load = key => Promise.all([
+    loadJSON(`data/events/${key}.json`),
+    loadJSON('data/stations.json'),
+    loadJSON('data/meta.json'),
+  ]);
+
   try {
-    [ev, stations, meta] = await Promise.all([
-      loadJSON(`data/events/${id}.json`),
-      loadJSON('data/stations.json'),
-      loadJSON('data/meta.json'),
-    ]);
+    [ev, stations, meta] = await load(id);
   } catch {
-    fail(t('event.badId', { id }));
-    return;
+    let alias = null;
+    try {
+      alias = (await loadJSON('data/aliases.json'))[id] || null;
+    } catch { /* no alias table shipped — fall through to the error */ }
+    if (!alias) { fail(t('event.badId', { id })); return; }
+    try {
+      [ev, stations, meta] = await load(alias);
+    } catch {
+      fail(t('event.badId', { id }));
+      return;
+    }
+    // rewrite the bar so a reshared link carries the current id, and so
+    // a reload does not pay for the lookup twice
+    history.replaceState(null, '', `#${alias}`);
   }
 
   currentEvent = ev;
   renderHead(ev);
   renderPicks(ev);
+
+  // the legend states the velocity actually used, so it cannot drift
+  // away from GUIDES when those are refitted
+  const setLegend = () => {
+    const lp = document.getElementById('legend-p');
+    const ls = document.getElementById('legend-s');
+    if (lp) lp.textContent = t('event.pMoveout', { v: V_P.toFixed(2) });
+    if (ls) ls.textContent = t('event.sMoveout', { v: V_S.toFixed(2) });
+  };
+  setLegend();
+  if (typeof onLangChange === 'function') onLangChange(setLegend);
 
   const canvas = document.getElementById('record-canvas');
   drawRecordSection(canvas, ev);

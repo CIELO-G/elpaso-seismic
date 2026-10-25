@@ -104,7 +104,7 @@ function applyFilters() {
     for (const [id, m] of Object.entries(markers)) {
       if (!m.setStyle) continue;
       const on = !narrowed || keep.has(id);
-      m.setStyle({ opacity: on ? 0.95 : 0.1, fillOpacity: on ? 0.55 : 0.04 });
+      m.setStyle(markerStyle(m._isEq, on));
     }
   }
 
@@ -168,6 +168,11 @@ function announce(n, narrowed) {
 }
 
 // ── Boot ───────────────────────────────────────────────────────────
+/* Switching the backdrop changes what a marker must look like to stay
+ * visible, so re-run the whole styling pass — applyFilters already walks
+ * every marker and knows which are dimmed. */
+if (typeof onBasemapChange === 'function') onBasemapChange(() => applyFilters());
+
 const filtersReady = (async function initFilters() {
   await (window.siteReady || Promise.resolve());
   EVENTS = catalog.map(ev => ({ ...ev, local: localParts(ev.time) }));
