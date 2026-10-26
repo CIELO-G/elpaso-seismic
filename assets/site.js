@@ -235,8 +235,6 @@ window.siteReady = (async function init() {
   document.getElementById('st-quakes').textContent = meta.n_earthquakes;
   document.getElementById('st-stations').textContent =
     stations.filter(s => !isRetired(s)).length;
-  document.getElementById('updated').textContent =
-    'Catalog updated ' + meta.generated_utc.slice(0, 10) + ' (UTC)';
 
   const staLayers = { active: L.layerGroup(), retired: L.layerGroup() };
   for (const s of stations) {
@@ -325,6 +323,8 @@ window.siteReady = (async function init() {
 
   renderFreshness(meta, catalog);
   renderExpect(catalog);
+  // "refreshed 5 minutes ago" keeps counting while the tab stays open
+  setInterval(() => renderFreshness(meta, catalog), 30000);
 
   // Anything generated in JS has to be rebuilt when the language flips.
   // Static copy is handled by applyI18n(); this is the rest.
@@ -371,12 +371,26 @@ function renderFreshness(meta, cat) {
     { dateStyle: 'long' });
 
   host.innerHTML =
-    `<b>${t('fresh.recent', { date: fmt.format(new Date(newest)), n: days })}</b> ` +
+    `<b>${t('fresh.refreshed', { ago: timeAgo(meta.generated_utc) })}</b> ` +
+    t('fresh.recent', { date: fmt.format(new Date(newest)), n: days }) + ' ' +
     t('fresh.lag');
+  host.title = new Date(meta.generated_utc).toLocaleString(
+    document.documentElement.lang || 'en', { dateStyle: 'long', timeStyle: 'short' });
 
   const up = document.getElementById('updated');
   if (up) up.textContent = t('fresh.updated',
     { date: fmt.format(new Date(meta.generated_utc)) });
+}
+
+/* "3 hours ago", "yesterday", in the page language. Coarse on purpose:
+ * minutes for the first hour, then hours, then days. */
+function timeAgo(iso) {
+  const rtf = new Intl.RelativeTimeFormat(document.documentElement.lang || 'en',
+    { numeric: 'auto' });
+  const mins = Math.max(0, Math.round((Date.now() - new Date(iso)) / 60000));
+  if (mins < 60) return rtf.format(-mins, 'minute');
+  if (mins < 24 * 60) return rtf.format(-Math.floor(mins / 60), 'hour');
+  return rtf.format(-Math.floor(mins / 1440), 'day');
 }
 
 /* Blasting is scheduled work, which makes it the rare kind of seismicity
