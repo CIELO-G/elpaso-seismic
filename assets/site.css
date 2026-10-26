@@ -951,7 +951,7 @@ code {
   transition: background .14s var(--ease), color .14s var(--ease);
 }
 .basemap-switch button:hover { background: #1c1d20; color: var(--dark-ink); }
-.basemap-switch button.on { background: var(--accent); color: #fff; }
+.basemap-switch button.on { background: var(--accent); color: var(--on-accent); }
 .basemap-switch button:focus-visible {
   outline: 2px solid var(--accent); outline-offset: -2px; z-index: 1;
 }

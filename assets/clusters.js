@@ -105,6 +105,9 @@ function drawSiteCircles() {
       opacity: 1,
     });
     c.on('click', () => toggleSite(s.id));
+    // under the event markers: a ring covers all its blasts, and on top it
+    // would take their clicks (selecting the site instead of the event)
+    c.bringToBack();
     s._circle = c;
   }
 }

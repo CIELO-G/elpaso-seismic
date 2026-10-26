@@ -9,6 +9,11 @@
 
 let catalog = [], markers = {};
 
+/* "M1.4", or "M?" when the catalog has no magnitude for the event (a few
+ * 2021 events were located but never sized). Never print a missing value
+ * as M0.0. (Same helper in event-page.js; each page loads only one.) */
+const fmtMag = m => (m == null ? 'M?' : 'M' + m.toFixed(1));
+
 // ── Map ────────────────────────────────────────────────────────────
 // zoomControl off here and re-added top-right: the default top-left
 // position sits underneath the HUD readouts.
@@ -158,7 +163,7 @@ async function showEvent(id) {
   const ev = await loadJSON(`data/events/${id}.json`);
   document.getElementById('detail-hint').style.display = 'none';
   document.getElementById('detail-title').textContent =
-    `${typeLabel(ev.event_type)}, M${(ev.magnitude ?? 0).toFixed(1)}`;
+    `${typeLabel(ev.event_type)}, ${fmtMag(ev.magnitude)}`;
   // lead with the place, not the coordinate — "4 km W of Fort Bliss" is
   // what a local can actually picture
   const where = describePlace(ev.latitude, ev.longitude);
@@ -170,10 +175,13 @@ async function showEvent(id) {
     `<span class="ev-id">${ev.event_id}</span>`;
 
   currentEvent = ev;
+  // a few 2021 events have picks but no archived waveforms: no traces
+  // to hover, so no guide toggle or hover hint either
+  const hasWaves = ev.traces.length > 0;
   const guideRow = document.getElementById('guide-row');
-  if (guideRow) guideRow.hidden = false;
+  if (guideRow) guideRow.hidden = !hasWaves;
   const waveHint = document.getElementById('wave-hint');
-  if (waveHint) waveHint.hidden = false;
+  if (waveHint) waveHint.hidden = !hasWaves;
 
   // the panel is the quick look; the deep page is one click away
   const more = document.getElementById('detail-link');
@@ -239,7 +247,7 @@ window.siteReady = (async function init() {
         iconSize: [12, 9],
       }),
       title: `${s.network}.${s.station}`,
-    }).bindPopup(
+    }).bindPopup(() =>   // a function, so the popup follows the language
       `<b>${s.network}.${s.station}</b><br>${s.model}<br>` +
       t(retired ? 'sta.retiredNote' : 'sta.activeNote')
     ).addTo(staLayers[retired ? 'retired' : 'active']);
@@ -258,8 +266,8 @@ window.siteReady = (async function init() {
     const m = L.circleMarker([ev.latitude, ev.longitude], {
       radius: magRadius(ev.magnitude),
       ...markerStyle(isEq),            // see MARKER_THEME in basemaps.js
-    }).addTo(map).bindPopup(
-      `<b>${typeLabel(ev.event_type)}</b> M${(ev.magnitude ?? 0).toFixed(1)}` +
+    }).addTo(map).bindPopup(() =>     // built on open: follows the language
+      `<b>${typeLabel(ev.event_type)}</b> ${fmtMag(ev.magnitude)}` +
       `<br>${describePlace(ev.latitude, ev.longitude) || ''}` +
       `<br>${ev.time.replace('T', ' ').slice(0, 16)} UTC`);
     m.on('click', () => showEvent(ev.event_id));
@@ -273,7 +281,7 @@ window.siteReady = (async function init() {
     row.setAttribute('role', 'button');
     row.tabIndex = 0;
     row.setAttribute('aria-label',
-      `${typeLabel(ev.event_type)}, M${(ev.magnitude ?? 0).toFixed(1)}, ` +
+      `${typeLabel(ev.event_type)}, ${fmtMag(ev.magnitude)}, ` +
       `${ev.time.slice(0, 10)}`);
     // identity rides the swatch, not the text colour — a categorical hue is
     // not reliably legible as text on the surface
@@ -281,7 +289,7 @@ window.siteReady = (async function init() {
       `<span class="ev-date">${ev.time.slice(0, 10)}</span>` +
       `<span class="ev-type"><i class="ev-dot ${TYPE_CLASS[ev.event_type] || ''}"></i>` +
       `${typeLabel(ev.event_type)}</span>` +
-      `<span class="ev-mag">M${(ev.magnitude ?? 0).toFixed(1)}</span>`;
+      `<span class="ev-mag">${fmtMag(ev.magnitude)}</span>`;
     row.addEventListener('click', () => showEvent(ev.event_id));
     row.addEventListener('keydown', e => {
       if (e.key !== 'Enter' && e.key !== ' ') return;
@@ -325,15 +333,28 @@ window.siteReady = (async function init() {
     renderFreshness(meta, catalog);
     renderExpect(catalog);
     rebuildEventList();
+    // the rebuilt rows are all visible again; re-apply the active filters
+    // (and their chip text, now in the new language)
+    if (typeof applyFilters === 'function') applyFilters();
     if (currentEvent) showEvent(currentEvent.event_id);
   });
 
   revealSections();
   wireScrollSpy();
 
-  // deep link: index.html#<event_id>
-  const want = location.hash.slice(1);
-  if (want && catalog.some(e => e.event_id === want)) showEvent(want);
+  // deep link: index.html#<event_id>, including the pre-2026-10-16
+  // positional ids (data/aliases.json), and a hash changed in place
+  const openFromHash = async () => {
+    let want = decodeURIComponent(location.hash.slice(1));
+    if (!want || currentEvent?.event_id === want) return;
+    if (!catalog.some(e => e.event_id === want)) {
+      const aliases = await loadJSON('data/aliases.json').catch(() => ({}));
+      want = aliases[want];
+    }
+    if (want && catalog.some(e => e.event_id === want)) showEvent(want);
+  };
+  openFromHash();
+  window.addEventListener('hashchange', openFromHash);
 })();
 
 let rebuildEventList = () => {};
@@ -365,8 +386,10 @@ function renderExpect(cat) {
   const blasts = cat.filter(e => e.event_type !== 'earthquake');
   if (!blasts.length) return;
 
+  // peakHour is already El Paso time; format it as a wall-clock hour in UTC
+  // so the visitor's own timezone can't shift it
   const fmtHour = new Intl.DateTimeFormat(document.documentElement.lang || 'en',
-    { hour: 'numeric', hour12: true });   // "5 PM", not a bare "17"
+    { hour: 'numeric', hour12: true, timeZone: 'UTC' });   // "5 PM", not "17"
   const localHour = iso => Number(new Intl.DateTimeFormat('en-US',
     { timeZone: 'America/Denver', hour: '2-digit', hour12: false })
     .format(new Date(iso))) % 24;
@@ -391,7 +414,7 @@ function renderExpect(cat) {
   // es-MX renders "5 p. m." with a trailing period; the sentence supplies
   // its own, so trim it rather than printing "5 p. m.."
   const hourLabel = fmtHour
-    .format(new Date(Date.UTC(2026, 0, 1, (peakHour + 7) % 24)))
+    .format(new Date(Date.UTC(2026, 0, 1, peakHour)))
     .replace(/\.$/, '');
   const set = (id, html) => {
     const el = document.getElementById(id);

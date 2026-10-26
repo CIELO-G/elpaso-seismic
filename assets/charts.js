@@ -59,7 +59,10 @@ function renderBars(host, { bars, height, tickEvery = 1, band = null, chart,
   const barW = Math.max(3, Math.min(BAR_MAX, slot - 3, slot * 0.72));
 
   const out = [];
-  out.push(`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img">`);
+  // a group, not an img: an img hides its children, and the bars are buttons
+  const title = host.closest('figure')?.querySelector('h2, h3')?.textContent.trim() || '';
+  out.push(`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="group" ` +
+    `aria-label="${title}">`);
 
   // shaded context band (used on the time-of-day chart for working hours)
   if (band) {
@@ -230,8 +233,9 @@ function monthBars() {
 function magBars() {
   const mags = EVENTS.map(e => e.magnitude).filter(m => m != null);
   const hi = Math.max(1, ...mags);
+  const lo = Math.floor(Math.min(0, ...mags) / 0.25) * 0.25;   // ML can be negative
   const keys = [];
-  for (let v = 0; v <= hi + 0.25; v += 0.25) keys.push(v.toFixed(2));
+  for (let v = lo; v <= hi + 0.25; v += 0.25) keys.push(v.toFixed(2));
   const binOf = m => (Math.floor(m / 0.25) * 0.25).toFixed(2);
   return bin(ev => (ev.magnitude == null ? null : binOf(ev.magnitude)), keys,
     k => (Number(k) % 0.5 === 0 ? Number(k).toFixed(1) : ''),
