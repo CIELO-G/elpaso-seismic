@@ -69,6 +69,7 @@ const STRINGS = {
     'fresh.recent': 'Most recent recorded event: {date} ({n} days ago).',
     'fresh.lag': 'Events are reviewed by hand before they appear here, so the last few weeks are normally empty.',
     'fresh.updated': 'Catalog last refreshed {date}',
+    'fresh.refreshed': 'Data refreshed {ago}.',
 
     // ── story
     'story.eyebrow': 'El Paso · Ciudad Juárez · a student project at UTEP',
@@ -264,6 +265,7 @@ const STRINGS = {
     'fresh.recent': 'Evento más reciente registrado: {date} (hace {n} días).',
     'fresh.lag': 'Cada evento se revisa a mano antes de publicarse, así que las últimas semanas normalmente aparecen vacías.',
     'fresh.updated': 'Catálogo actualizado el {date}',
+    'fresh.refreshed': 'Datos actualizados {ago}.',
 
     // ── story
     'story.eyebrow': 'El Paso · Ciudad Juárez · un proyecto estudiantil de UTEP',
