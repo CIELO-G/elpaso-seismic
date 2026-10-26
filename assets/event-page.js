@@ -22,6 +22,11 @@ const localFmt = () => new Intl.DateTimeFormat(
 const esc = s => String(s).replace(/[&<>"]/g,
   c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+/* "M1.4", or "M?" when the catalog has no magnitude for the event (a few
+ * 2021 events were located but never sized). Never print a missing value
+ * as M0.0. (Same helper in event-page.js; each page loads only one.) */
+const fmtMag = m => (m == null ? 'M?' : 'M' + m.toFixed(1));
+
 // ── Record section ─────────────────────────────────────────────────
 // Distance up the y axis, time along x. A phase with velocity v satisfies
 // d = v*t, so on these axes it is a straight line through the origin —
@@ -128,24 +133,26 @@ function renderHead(ev) {
   const evTime = new Date(ev.time);     // not `t` - that name is the translator
   const label = typeLabel(ev.event_type);
 
-  document.title = `${label} M${(ev.magnitude ?? 0).toFixed(1)} | El Paso Seismic Network`;
+  document.title = `${label} ${fmtMag(ev.magnitude)} | El Paso Seismic Network`;
   document.getElementById('ev-eyebrow').textContent =
     label + ' · ' + ev.event_id;
   document.getElementById('ev-title').textContent =
-    `${label}, M${(ev.magnitude ?? 0).toFixed(1)}`;
+    `${label}, ${fmtMag(ev.magnitude)}`;
   const where = describePlace(ev.latitude, ev.longitude);
   document.getElementById('ev-sub').textContent =
     (where ? where + ' · ' : '') +
     `${localFmt().format(evTime)} ${t('event.localTime')} · ` +
     `${ev.time.replace('T', ' ').slice(0, 19)} UTC`;
 
+  const dists = ev.traces.map(x => x.distance_km);
+  const km = v => (dists.length ? v.toFixed(1) + ' km' : 'n/a');
   const facts = [
     [t('event.magnitude'), ev.magnitude == null ? 'n/a' : 'M' + ev.magnitude.toFixed(2)],
     [t('event.location'), `${ev.latitude.toFixed(3)}, ${ev.longitude.toFixed(3)}`],
     [t('event.stations'), ev.traces.length],
     [t('event.phasePicks'), ev.num_picks],
-    [t('event.nearest'), Math.min(...ev.traces.map(x => x.distance_km)).toFixed(1) + ' km'],
-    [t('event.furthest'), Math.max(...ev.traces.map(x => x.distance_km)).toFixed(1) + ' km'],
+    [t('event.nearest'), km(Math.min(...dists))],
+    [t('event.furthest'), km(Math.max(...dists))],
   ];
   document.getElementById('ev-facts').innerHTML = facts
     .map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('');
@@ -304,9 +311,16 @@ function fail(msg) {
 
   const spread = Math.max(...ev.traces.map(x => x.distance_km)) -
                  Math.min(...ev.traces.map(x => x.distance_km));
+  // no archived waveforms (a few 2021 events): the record section and the
+  // per-station strips would be empty boxes, so drop them and say why
+  if (!ev.traces.length) {
+    for (const id of ['traces']) document.getElementById(id)?.setAttribute('hidden', '');
+    document.querySelector('#record .record-frame')?.setAttribute('hidden', '');
+  }
   const paintRecordNote = () => {
     document.getElementById('record-note').textContent =
-      ev.traces.length < 3
+      !ev.traces.length ? t('event.noWaves')
+      : ev.traces.length < 3
         ? t('event.recordNoteFew', { n: ev.traces.length })
         : t('event.recordNote', { n: ev.traces.length, km: spread.toFixed(0) });
   };
