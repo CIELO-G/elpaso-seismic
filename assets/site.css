@@ -20,42 +20,57 @@
  * wears a data colour; identity comes from a swatch beside the text.
  * Map ring annotations use a neutral, not a data colour, so a cluster
  * outline can never be mistaken for an event.
+ *
+ * THEMES. The page is white by default; the Dark button in the top bar
+ * (assets/theme.js) sets <html data-theme="dark"> and remembers it. Only
+ * the page tokens change: the instrument panels are black in both themes
+ * and the data pair already clears 3:1 on black.
  */
 
 :root {
-  /* black page */
-  --bg:         #000000;
-  --surface:    #101114;
-  --surface-2:  #191a1e;
-  --border:     #26282d;
-  --border-2:   #35383f;
+  /* white page (default); the dark theme is below */
+  color-scheme: light;
+  --bg:         #ffffff;
+  --surface:    #ffffff;
+  --surface-2:  #eef0ec;
+  --border:     #e3e5e1;
+  --border-2:   #cfd2cc;
 
-  /* ink — all clear 4.5:1 on the page and on both card surfaces */
-  --ink:        #f2f4f7;
-  --ink-2:      #a8aeb8;
-  --ink-3:      #868e99;
+  /* ink — all clear 4.5:1 on the page and on white */
+  --ink:        #14171a;
+  --ink-2:      #545c68;
+  --ink-3:      #616974;
 
-  /* instrument surfaces (map band, waveform canvases). On a black page
-     these barely differ from the ground, so the BORDER does the work of
-     separating them, not the fill. */
+  /* dark instrument surfaces (map band, waveform canvases) */
   --dark:        #0c0c0c;
-  --dark-2:      #191a1e;
-  --dark-border: #35383f;
-  --dark-ink:    #f2f4f7;
-  --dark-ink-2:  #a8aeb8;
+  --dark-2:      #161719;
+  --dark-border: #2a2c30;
+  --dark-ink:    #eef1f4;
+  --dark-ink-2:  #9aa3ae;
 
   /* data — unchanged; both clear 3:1 on every surface here */
   --blast:      #04a14a;
   --quake:      #e307dc;
 
   /* chart chrome */
-  --grid:       #1c1e22;
-  --axis:       #35383f;
+  --grid:       #e8eae6;
+  --axis:       #cfd2cc;
 
-  /* UI accent — emerald stepped up for a black ground; the light-page
-     #0e7a3c only reaches 3.5:1 here and fails as link text */
-  --accent:     #2eb862;
-  --accent-dim: rgba(46,184,98,.14);
+  /* UI accent — deep emerald, never used as a data mark */
+  --accent:     #0e7a3c;
+  --accent-dim: rgba(14,122,60,.10);
+  --on-accent:  #ffffff;
+  --topbar-bg:  rgba(255,255,255,.86);
+  --tip-bg:     #14171a;
+  --tip-ink:    #ffffff;
+  --hover-ink:  #14171a;
+  --lift:       rgba(20,23,26,.12);   /* hover shadow */
+
+  /* phase badges on the page (the black canvases use the bright steps) */
+  --p-ink:      #b32b2b;
+  --p-bg:       rgba(217,58,58,.12);
+  --s-ink:      #17803a;
+  --s-bg:       rgba(31,157,69,.12);
 
   /* annotation + phase colours (on the black instrument surfaces) */
   --ring:       #c9d1d9;
@@ -70,6 +85,46 @@
   --radius: 12px;
   --maxw:   1200px;
   --ease:   cubic-bezier(.22,.61,.36,1);
+}
+
+/* dark page (Dark button, assets/theme.js): the black design, page tokens
+   only. The light-page accent #0e7a3c only reaches 3.5:1 on black and
+   fails as link text, so it is stepped up here. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:         #000000;
+  --surface:    #101114;
+  --surface-2:  #191a1e;
+  --border:     #26282d;
+  --border-2:   #35383f;
+
+  --ink:        #f2f4f7;
+  --ink-2:      #a8aeb8;
+  --ink-3:      #868e99;
+
+  /* on a black page the instrument panels barely differ from the ground,
+     so the BORDER separates them, not the fill */
+  --dark-2:      #191a1e;
+  --dark-border: #35383f;
+  --dark-ink:    #f2f4f7;
+  --dark-ink-2:  #a8aeb8;
+
+  --grid:       #1c1e22;
+  --axis:       #35383f;
+
+  --accent:     #2eb862;
+  --accent-dim: rgba(46,184,98,.14);
+  --on-accent:  #000000;
+  --topbar-bg:  rgba(0,0,0,.86);
+  --tip-bg:     #000000;
+  --tip-ink:    #f2f4f7;
+  --hover-ink:  #ffffff;
+  --lift:       rgba(0,0,0,.6);
+
+  --p-ink:      #ff8585;
+  --p-bg:       rgba(255,107,107,.16);
+  --s-ink:      #8ef09a;
+  --s-bg:       rgba(126,231,135,.16);
 }
 
 
@@ -122,7 +177,7 @@ summary:focus-visible, .ev-row:focus-visible, .trace:focus-visible {
   position: sticky; top: 0; z-index: 900;
   display: flex; align-items: center; justify-content: space-between;
   gap: 20px; padding: 12px 26px;
-  background: rgba(0,0,0,.86);
+  background: var(--topbar-bg);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
 }
@@ -326,7 +381,8 @@ main > section:first-child { margin-top: 30px; }
 .xtick { text-anchor: middle; }
 
 .bar-n { text-anchor: middle; fill: var(--ink); font-size: 10.5px; opacity: 0; }
-.band { fill: #ffffff; opacity: .05; }
+.band { fill: var(--hover-ink); opacity: .05; }
+.divider { stroke: var(--axis); stroke-width: 1; stroke-dasharray: 2 3; }
 .band-label { opacity: .75; font-size: 10px; letter-spacing: .08em; }
 
 /* the single direct label on the peak bar — selective, never every point */
@@ -336,13 +392,13 @@ main > section:first-child { margin-top: 30px; }
 .bar { cursor: pointer; }
 .bar .hit { fill: transparent; }
 .bar .seg { transition: opacity .16s var(--ease), filter .16s var(--ease); }
-.bar:hover .hit { fill: #ffffff; fill-opacity: .06; }
+.bar:hover .hit { fill: var(--hover-ink); fill-opacity: .06; }
 .bar:hover .seg { filter: brightness(1.12) saturate(1.15); }
 .bar:hover .bar-n, .bar:focus-visible .bar-n { opacity: 1; }
 .bar.dim .seg { opacity: .22; }
 .bar:focus { outline: none; }
 .bar:focus-visible .hit {
-  fill: #ffffff; fill-opacity: .07;
+  fill: var(--hover-ink); fill-opacity: .07;
   stroke: var(--accent); stroke-width: 1.5;
 }
 
@@ -355,11 +411,11 @@ main > section:first-child { margin-top: 30px; }
 
 .chart-tip {
   position: fixed; z-index: 1100; pointer-events: none;
-  background: #000; color: var(--ink);
+  background: var(--tip-bg); color: var(--tip-ink);
   border: 1px solid var(--border-2);
   border-radius: 8px; padding: 7px 11px;
   font-size: 12px; font-family: var(--mono);
-  white-space: nowrap; box-shadow: 0 10px 28px rgba(0,0,0,.7);
+  white-space: nowrap; box-shadow: 0 10px 28px var(--lift);
 }
 
 /* ── Legend / keys ──────────────────────────────────────────────── */
@@ -541,7 +597,7 @@ main > section:first-child { margin-top: 30px; }
 }
 .site-card:hover {
   border-color: var(--ink-3); transform: translateY(-3px);
-  box-shadow: 0 8px 22px rgba(0,0,0,.6);
+  box-shadow: 0 8px 22px var(--lift);
 }
 .site-card.active {
   border-color: var(--accent); background: var(--accent-dim);
@@ -598,7 +654,7 @@ code {
 .cta {
   display: inline-block; margin-top: 4px;
   background: var(--accent); border: 1px solid var(--accent);
-  color: #fff; border-radius: 8px; padding: 9px 16px;
+  color: var(--on-accent); border-radius: 8px; padding: 9px 16px;
   font-size: 13.5px; font-weight: 600;
   transition: transform .16s var(--ease), box-shadow .16s var(--ease);
 }
@@ -781,8 +837,8 @@ code {
   font-family: var(--mono); font-weight: 700; font-size: 12px;
   border-radius: 4px; padding: 1px 6px;
 }
-.phase.p { background: rgba(255,107,107,.16); color: #ff8585; }
-.phase.s { background: rgba(126,231,135,.16); color: #8ef09a; }
+.phase.p { background: var(--p-bg); color: var(--p-ink); }
+.phase.s { background: var(--s-bg); color: var(--s-ink); }
 
 .working { margin-top: 22px; }
 .working h3 { font-size: 15px; font-weight: 660; margin-bottom: 8px; }
@@ -814,6 +870,7 @@ code {
   transition: background .16s var(--ease), color .16s var(--ease),
               border-color .16s var(--ease);
 }
+.theme-btn { padding: 5px 11px; }
 .lang-btn:hover {
   background: var(--accent-dim); color: var(--accent); border-color: var(--accent);
 }
@@ -869,6 +926,7 @@ code {
   .freshness { padding: 0 15px; }
   .topbar-right { gap: 8px; }
   .lang-btn { padding: 4px 10px; font-size: 12px; }
+  .theme-btn { padding: 4px 9px; }
   .dyfi { padding: 18px 16px; }
   .dyfi h3 { font-size: 16px; }
 }
