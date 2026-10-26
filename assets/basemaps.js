@@ -1,6 +1,6 @@
 /* El Paso Seismic Network — base map switcher.
  *
- * Two backdrops: street (the default) and satellite imagery.
+ * Two backdrops: satellite imagery (the default) and street.
  *
  * KEYLESS ONLY. The README forbids API-keyed tile providers — this is a
  * public repo and a public site, so a key here would be a key published.
@@ -63,7 +63,7 @@ const MARKER_THEME = {
   satellite: { blast: '#04a14a', quake: '#e307dc', stroke: '#ffffff', fill: 0.92, weight: 2 },
 };
 
-let activeBasemap = 'street';
+let activeBasemap = 'satellite';
 const basemapListeners = [];
 const onBasemapChange = fn => basemapListeners.push(fn);
 const currentBasemapName = () => activeBasemap;
@@ -95,7 +95,7 @@ function savedBasemap() {
     if (BASEMAPS[v]) return v;
     if (LEGACY_BASEMAP[v]) return LEGACY_BASEMAP[v];
   } catch { /* private mode — fall through to the default */ }
-  return 'street';
+  return 'satellite';
 }
 
 function makeBasemapLayer(name) {
