@@ -44,7 +44,7 @@ function columnPath(x, y, w, h, r) {
 }
 
 function renderBars(host, { bars, height, tickEvery = 1, band = null, chart,
-                            peakLabel = false }) {
+                            peakLabel = false, divideAt = null }) {
   const W = Math.max(host.clientWidth, 240), H = height;
   // extra headroom on top when a direct label rides the tallest column
   const padL = 28, padR = 8, padT = peakLabel ? 30 : 12, padB = 24;
@@ -76,6 +76,18 @@ function renderBars(host, { bars, height, tickEvery = 1, band = null, chart,
       `y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}"/>`);
     out.push(`<text class="ytick" x="${padL - 6}" y="${(y(v) + 4).toFixed(1)}">${v}</text>`);
   }
+
+  // faint rules between groups of bars (the month chart's years)
+  if (divideAt) {
+    bars.forEach((b, i) => {
+      if (i === 0 || !divideAt(b)) return;
+      const x = (padL + i * slot).toFixed(1);
+      out.push(`<line class="divider" x1="${x}" x2="${x}" y1="${padT}" y2="${padT + plotH + 4}"/>`);
+    });
+  }
+
+  // x labels never overlap; collected here and thinned after the loop
+  const labels = [];
 
   bars.forEach((b, i) => {
     const total = b.blast + b.quake;
@@ -119,10 +131,18 @@ function renderBars(host, { bars, height, tickEvery = 1, band = null, chart,
     g.push('</g>');
     out.push(g.join(''));
 
-    if (i % tickEvery === 0) {
-      out.push(`<text class="xtick" x="${cx.toFixed(1)}" y="${H - 8}">${b.label}</text>`);
-    }
+    if (i % tickEvery === 0 && b.label) labels.push({ cx, text: String(b.label) });
   });
+
+  // Thinned right to left, so the regular labels (each January) win over a
+  // first, partial period squeezed in front of them.
+  let labelLeft = Infinity;
+  for (const l of labels.reverse()) {
+    const half = l.text.length * 3.2;   // ~6.4 px a character at 10 px
+    if (l.cx + half > labelLeft - 6) continue;
+    out.push(`<text class="xtick" x="${l.cx.toFixed(1)}" y="${H - 8}">${l.text}</text>`);
+    labelLeft = l.cx - half;
+  }
 
   // One direct label, on the tallest column only. Selective labelling is
   // the point — a number over every bar goes unread.
@@ -199,7 +219,10 @@ function monthBars() {
     keys.push(`${cur.getUTCFullYear()}-${MON[cur.getUTCMonth()]}`);
     cur.setUTCMonth(cur.getUTCMonth() + 1);
   }
-  return bin(ev => ev.local.ym, keys, k => k.split('-')[1],
+  // The axis spans years, so it is labelled by year (at each January and
+  // at the first month); the tooltip names the month.
+  return bin(ev => ev.local.ym, keys,
+    k => (k === keys[0] || k.endsWith('-Jan') ? k.split('-')[0] : ''),
     (k, n) => `${k.split('-')[1]} ${k.split('-')[0]} · ${plural(n, 'event')}`);
 }
 
@@ -245,7 +268,8 @@ function drawAll() {
   renderBars(document.getElementById('chart-dow'),
     { bars: dowBars(), height: 170, chart: 'dow' });
   renderBars(document.getElementById('chart-month'),
-    { bars: monthBars(), height: 170, chart: 'month', tickEvery: 2 });
+    { bars: monthBars(), height: 170, chart: 'month',
+      divideAt: b => b.key.endsWith('-Jan') });
   renderBars(document.getElementById('chart-mag'),
     { bars: magBars(), height: 170, chart: 'mag' });
 

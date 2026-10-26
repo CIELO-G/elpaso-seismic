@@ -12,6 +12,7 @@
 <!-- bridges maplibre's GL basemap into Leaflet; site.js calls L.maplibreGL() -->
 <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js"></script>
 <link rel="stylesheet" href="assets/site.css">
+<script src="assets/theme.js"></script>
 </head>
 <body>
 
@@ -35,6 +36,7 @@
       <a href="#sites" data-i18n="nav.quarries">Quarries</a>
       <a href="#felt" data-i18n="nav.felt">Felt something?</a>
     </nav>
+    <button type="button" id="theme-btn" class="lang-btn theme-btn" aria-pressed="false">Dark</button>
     <button type="button" id="lang-btn" class="lang-btn">Espa&ntilde;ol</button>
   </div>
 </header>
