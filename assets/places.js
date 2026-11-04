@@ -73,5 +73,7 @@ function describePlace(lat, lon, maxKm = 40) {
   const deg = (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360;
   const dir = compassPoints()[Math.round(deg / 22.5) % 16];
 
-  return t('place.of', { km: best.km.toFixed(0), dir, place: name });
+  // Spanish contracts "de el" to "del": "al SE del centro de Ciudad Juárez"
+  return t('place.of', { km: best.km.toFixed(0), dir, place: name })
+    .replace(/ de el /g, ' del ');
 }

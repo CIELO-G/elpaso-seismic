@@ -14,6 +14,17 @@ let catalog = [], markers = {};
  * as M0.0. (Same helper in event-page.js; each page loads only one.) */
 const fmtMag = m => (m == null ? 'M?' : 'M' + m.toFixed(1));
 
+/* "Oct 13, 2026, 5:12 PM" in El Paso time, whatever the visitor's own
+ * timezone — residents compare against when they felt it. withZone adds
+ * "MDT"/"MST" for the detail panel. */
+function localWhen(iso, withZone = false) {
+  return new Intl.DateTimeFormat(document.documentElement.lang || 'en', {
+    timeZone: 'America/Denver', dateStyle: 'medium', timeStyle: 'short',
+  }).format(new Date(iso)) + (withZone ? ' ' + new Intl.DateTimeFormat('en-US',
+    { timeZone: 'America/Denver', timeZoneName: 'short' })
+    .formatToParts(new Date(iso)).find(p => p.type === 'timeZoneName').value : '');
+}
+
 // ── Map ────────────────────────────────────────────────────────────
 // zoomControl off here and re-added top-right: the default top-left
 // position sits underneath the HUD readouts.
@@ -169,7 +180,7 @@ async function showEvent(id) {
   const where = describePlace(ev.latitude, ev.longitude);
   document.getElementById('detail-meta').innerHTML =
     (where ? `<b class="ev-where">${where}</b><br>` : '') +
-    `${ev.time.replace('T', ' ').slice(0, 19)} UTC · ` +
+    `${localWhen(ev.time, true)} · ` +
     `${ev.num_picks} ${t('detail.picks')} · ` +
     `${ev.traces.length} ${t('detail.stations')} · ` +
     `<span class="ev-id">${ev.event_id}</span>`;
@@ -233,6 +244,13 @@ window.siteReady = (async function init() {
   document.getElementById('st-events').textContent = meta.n_events;
   document.getElementById('st-blasts').textContent = meta.n_quarry_blasts;
   document.getElementById('st-quakes').textContent = meta.n_earthquakes;
+  // "1 earthquake", not "1 earthquakes"; applyI18n() reads the key again
+  // on every language switch
+  const qLabel = document.querySelector('[data-i18n^="hud.quake"]');
+  if (qLabel) {
+    qLabel.dataset.i18n = meta.n_earthquakes === 1 ? 'hud.quake' : 'hud.quakes';
+    applyI18n();
+  }
   document.getElementById('st-stations').textContent =
     stations.filter(s => !isRetired(s)).length;
 
@@ -267,7 +285,7 @@ window.siteReady = (async function init() {
     }).addTo(map).bindPopup(() =>     // built on open: follows the language
       `<b>${typeLabel(ev.event_type)}</b> ${fmtMag(ev.magnitude)}` +
       `<br>${describePlace(ev.latitude, ev.longitude) || ''}` +
-      `<br>${ev.time.replace('T', ' ').slice(0, 16)} UTC`);
+      `<br>${localWhen(ev.time)}`);
     m.on('click', () => showEvent(ev.event_id));
     m._isEq = isEq;                    // filters.js restyles by type
     markers[ev.event_id] = m;
@@ -278,15 +296,16 @@ window.siteReady = (async function init() {
     row.dataset.id = ev.event_id;
     row.setAttribute('role', 'button');
     row.tabIndex = 0;
+    const place = describePlace(ev.latitude, ev.longitude) || '';
+    ev._place = place;                 // filters.js searches it
     row.setAttribute('aria-label',
-      `${typeLabel(ev.event_type)}, ${fmtMag(ev.magnitude)}, ` +
-      `${ev.time.slice(0, 10)}`);
+      `${typeLabel(ev.event_type)}, ${fmtMag(ev.magnitude)}, ${localWhen(ev.time)}`);
     // identity rides the swatch, not the text colour — a categorical hue is
     // not reliably legible as text on the surface
     row.innerHTML =
-      `<span class="ev-date">${ev.time.slice(0, 10)}</span>` +
-      `<span class="ev-type"><i class="ev-dot ${TYPE_CLASS[ev.event_type] || ''}"></i>` +
-      `${typeLabel(ev.event_type)}</span>` +
+      `<i class="ev-dot ${TYPE_CLASS[ev.event_type] || ''}" aria-hidden="true"></i>` +
+      `<span class="ev-main"><span class="ev-when">${localWhen(ev.time)}</span>` +
+      `<span class="ev-what">${typeLabel(ev.event_type)}${place ? ' · ' + place : ''}</span></span>` +
       `<span class="ev-mag">${fmtMag(ev.magnitude)}</span>`;
     row.addEventListener('click', () => showEvent(ev.event_id));
     row.addEventListener('keydown', e => {
@@ -339,7 +358,6 @@ window.siteReady = (async function init() {
     if (currentEvent) showEvent(currentEvent.event_id);
   });
 
-  revealSections();
   wireScrollSpy();
 
   // deep link: index.html#<event_id>, including the pre-2026-10-16
@@ -435,8 +453,7 @@ function renderExpect(cat) {
     if (el) el.innerHTML = html;
   };
   set('expect-when', t('expect.when', { hour: hourLabel }));
-  set('expect-gap', t('expect.gap',
-    { gap: median, max: gaps.length ? Math.max(...gaps) : 0 }));
+  set('expect-gap', t('expect.gap', { gap: median }));
   set('expect-sunday', t('expect.sunday', { sun: sundays, total: blasts.length }));
 }
 
@@ -462,27 +479,4 @@ function wireScrollSpy() {
   }, { rootMargin: '-20% 0px -70% 0px' });
 
   targets.forEach(t => io.observe(t));
-}
-
-/* Sections fade up as they arrive. Applied from JS and only when the
- * viewer hasn't asked for reduced motion, so the content is never hidden
- * behind an animation that might not run — no JS, no IntersectionObserver,
- * or reduced motion all leave the page fully visible. */
-function revealSections() {
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (reduced || !('IntersectionObserver' in window)) return;
-
-  // The first screen must be solid the instant it paints — never fade in
-  // the map or the finding itself.
-  const targets = document.querySelectorAll(
-    'main > section:not(.map-hero):not(.story)');
-  const io = new IntersectionObserver((entries, obs) => {
-    for (const e of entries) {
-      if (!e.isIntersecting) continue;
-      e.target.classList.add('in');
-      obs.unobserve(e.target);
-    }
-  }, { rootMargin: '0px 0px -8% 0px' });
-
-  targets.forEach(el => { el.classList.add('reveal'); io.observe(el); });
 }

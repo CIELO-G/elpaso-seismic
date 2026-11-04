@@ -16,7 +16,7 @@ const typeLabel = kind =>
   kind === 'earthquake' ? t('type.quake') : t('type.blast');
 
 /* The two validated categorical slots — see charts.js and the README. */
-const BLAST = '#04a14a', QUAKE = '#e307dc';
+const BLAST = '#2f6db5', QUAKE = '#d6452b';
 
 /* Rg is switched off for now. Flip this back to true to restore it
  * everywhere — the move-out guide below, and the Rg window in the
