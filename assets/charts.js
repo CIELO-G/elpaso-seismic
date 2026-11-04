@@ -20,7 +20,7 @@
  * site uses — the near-black map and the light page — so an event is the
  * same colour wherever it appears. Checked with tools/validate_palette.py
  * against each surface. Re-run it before changing them. */
-const C_BLAST = '#04a14a', C_QUAKE = '#e307dc';
+const C_BLAST = '#2f6db5', C_QUAKE = '#d6452b';
 
 const BAR_MAX = 24;   // bars are capped, never fill their slot
 const GAP = 2;        // surface gap between touching stacked segments

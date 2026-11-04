@@ -63,7 +63,7 @@ function passesBin(ev) {
 
 const passesSite = ev => !FILTER.site || ev.site_id === FILTER.site;
 
-// Search matches id, type, date, magnitude and site label — whatever a
+// Search matches id, type, date, place, magnitude and site label — whatever a
 // student is most likely to paste in.
 function passesQuery(ev) {
   const q = FILTER.q.trim().toLowerCase();
@@ -73,6 +73,7 @@ function passesQuery(ev) {
     ev.event_type.replace('_', ' ').includes(term) ||
     ev.time.slice(0, 10).includes(term) ||
     (ev.site_label || '').toLowerCase().includes(term) ||
+    (ev._place || '').toLowerCase().includes(term) ||
     (ev.magnitude != null && ('m' + ev.magnitude.toFixed(2)).includes(term))
   ));
 }

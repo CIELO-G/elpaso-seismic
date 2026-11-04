@@ -48,19 +48,19 @@ const BASEMAPS = {
  * map and 1.85:1 on the light one, both under the 3:1 floor, even though
  * the pure hexes pass. Validate the composite, not the swatch.
  *
- * So: near-opaque fills, a darker emerald step on the light backdrop
- * (#04a14a cannot clear 3:1 against near-white), and a stroke that
- * contrasts with the backdrop rather than matching the fill.
+ * So: near-opaque fills (#2f6db5 / #d6452b both clear 3:1 on near-white
+ * as is), and a stroke that contrasts with the backdrop rather than
+ * matching the fill.
  *
- * Satellite is the case no flat colour solves: against imagery the same
- * green measures 1.65:1 on desert, 3.14:1 on vegetation and 2.10:1 on
+ * Satellite is the case no flat colour solves: against imagery the old
+ * green measured 1.65:1 on desert, 3.14:1 on vegetation and 2.10:1 on
  * bright sand. Nothing is reliable, so the marker is defined by its
  * OUTLINE — a white stroke plus the dark drop-shadow in site.css — and
  * the fill only carries identity.
  */
 const MARKER_THEME = {
-  street:    { blast: '#049143', quake: '#e307dc', stroke: '#14171a', fill: 0.90, weight: 1.5 },
-  satellite: { blast: '#04a14a', quake: '#e307dc', stroke: '#ffffff', fill: 0.92, weight: 2 },
+  street:    { blast: '#2f6db5', quake: '#d6452b', stroke: '#14171a', fill: 0.90, weight: 1.5 },
+  satellite: { blast: '#2f6db5', quake: '#d6452b', stroke: '#ffffff', fill: 0.92, weight: 2 },
 };
 
 let activeBasemap = 'satellite';
