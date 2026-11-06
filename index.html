@@ -35,10 +35,11 @@
   </a>
   <div class="topbar-right">
     <nav class="topnav" aria-label="Sections">
+      <a href="#about" data-i18n="nav.about">About</a>
       <a href="#events" data-i18n="nav.events">Events</a>
       <a href="#blasts" data-i18n="nav.blasts">Blasts &amp; earthquakes</a>
       <a href="#felt" data-i18n="nav.felt">Felt shaking?</a>
-      <a href="#about" data-i18n="nav.about">About</a>
+      <a href="#how" data-i18n="nav.how">How it works</a>
     </nav>
     <button type="button" id="lang-btn" class="lang-btn">Espa&ntilde;ol</button>
     <button type="button" id="theme-btn" class="lang-btn theme-btn" aria-pressed="false">Dark</button>
@@ -47,11 +48,15 @@
 
 <main>
 
-  <!-- ── Intro ────────────────────────────────────────────────────── -->
-  <section class="intro">
+  <!-- ── About the project (first thing on the page) ─────────────── -->
+  <section class="intro" id="about">
     <div class="intro-copy">
       <h1 data-i18n="intro.h1">Earthquakes and quarry blasts in El&nbsp;Paso and Ciudad&nbsp;Ju&aacute;rez</h1>
       <p class="lead" data-i18n="intro.lead"></p>
+      <div class="prose about-top">
+        <p data-i18n="about.p2"></p>
+        <p data-i18n="about.funding"></p>
+      </div>
       <ul class="tally" aria-label="Catalog totals">
         <li><b id="st-events">&hellip;</b> <span data-i18n="hud.events">confirmed events</span></li>
         <li><b id="st-blasts">&hellip;</b> <span data-i18n="hud.blasts">quarry blasts</span></li>
@@ -61,13 +66,23 @@
       <p class="freshness" id="freshness"></p>
     </div>
 
-    <aside class="felt-card" aria-labelledby="felt-card-h">
-      <h2 id="felt-card-h" data-i18n="feltCard.h">Felt shaking just now?</h2>
-      <p data-i18n="feltCard.body"></p>
-      <a class="cta" href="https://earthquake.usgs.gov/data/dyfi/" rel="noopener"
-         data-i18n="felt.bannerCta">Report it to the USGS</a>
-      <p class="small" data-i18n="feltCard.note"></p>
-    </aside>
+    <div class="intro-side">
+      <aside class="felt-card" aria-labelledby="felt-card-h">
+        <h2 id="felt-card-h" data-i18n="feltCard.h">Felt shaking just now?</h2>
+        <p data-i18n="feltCard.body"></p>
+        <a class="cta" href="https://earthquake.usgs.gov/data/dyfi/" rel="noopener"
+           data-i18n="felt.bannerCta">Report it to the USGS</a>
+        <p class="small" data-i18n="feltCard.note"></p>
+      </aside>
+      <div class="partner">
+        <a href="https://www.cielog.org/" target="_blank" rel="noopener">
+          <img src="assets/cielo-g.png" width="800" height="722"
+               alt="CIELO-G: Connecting Geoscience &amp; Community">
+        </a>
+        <p><a href="https://www.nsf.gov/awardsearch/show-award/?AWD_ID=2228180"
+              target="_blank" rel="noopener" data-i18n="about.award">NSF Award No. 2228180</a></p>
+      </div>
+    </div>
   </section>
 
   <!-- ── Map + list ───────────────────────────────────────────────── -->
@@ -209,30 +224,22 @@
     </div>
   </section>
 
-  <!-- ── About ────────────────────────────────────────────────────── -->
-  <section class="section" id="about">
-    <h2 data-i18n="about.h2">About the network</h2>
-    <div class="about-grid">
+  <!-- ── How it works ─────────────────────────────────────────────── -->
+  <section class="section" id="how">
+    <h2 data-i18n="about.howH">How an event gets on this page</h2>
+    <div class="two-col">
       <div class="prose">
-        <p data-i18n="about.p1"></p>
-        <p data-i18n="about.p2"></p>
-        <h3 data-i18n="about.howH">How an event gets on this page</h3>
         <ol class="steps">
           <li data-i18n="about.step1"></li>
           <li data-i18n="about.step2"></li>
           <li data-i18n="about.step3"></li>
           <li data-i18n="about.step4"></li>
         </ol>
+      </div>
+      <div class="prose">
         <h3 data-i18n="about.dataH">Data and code</h3>
         <p data-i18n="about.data"></p>
-      </div>
-      <div class="partner">
-        <a href="https://www.cielog.org/" target="_blank" rel="noopener">
-          <img src="assets/cielo-g.png" width="800" height="722"
-               alt="CIELO-G: Connecting Geoscience &amp; Community" loading="lazy">
-        </a>
-        <p><a href="https://www.cielog.org/" target="_blank" rel="noopener"
-              data-i18n="about.partner">Built in partnership with CIELO-G</a></p>
+        <p class="small" data-i18n="about.disclaimer"></p>
       </div>
     </div>
   </section>

@@ -237,6 +237,13 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 0 20px 80px; }
 .freshness { margin-top: 16px; color: var(--ink-3); font-size: 14.5px; max-width: 70ch; }
 .freshness b { color: var(--ink-2); font-weight: 600; }
 
+.intro-side { display: flex; flex-direction: column; gap: 22px; }
+.about-top { margin-top: 16px; }
+.about-top p { margin-bottom: 12px; }
+.intro .partner { flex-direction: row; align-items: center; gap: 16px; }
+.intro .partner img { width: 110px; }
+.intro .partner p { text-align: left; }
+
 .felt-card {
   background: var(--surface-2); border-top: 4px solid var(--orange);
   padding: 20px 22px 18px;
@@ -530,12 +537,8 @@ code {
   border-radius: 4px; padding: 1px 5px; font-family: var(--mono); font-size: 13px;
 }
 
-/* ── About ──────────────────────────────────────────────────────── */
+/* ── How it works ───────────────────────────────────────────────── */
 
-.about-grid {
-  display: grid; grid-template-columns: minmax(0,1fr) 220px;
-  gap: 48px; align-items: start;
-}
 .steps { padding-left: 22px; margin-bottom: 14px; }
 .steps li { margin-bottom: 8px; }
 .partner { display: flex; flex-direction: column; align-items: center; gap: 10px; }
@@ -715,7 +718,6 @@ main > section.picks, main > section.locator {
   #event-list { max-height: 420px; }
   .two-col { grid-template-columns: 1fr; gap: 24px; }
   .chart-row { grid-template-columns: 1fr; }
-  .about-grid { grid-template-columns: 1fr; gap: 24px; }
   .partner { align-items: flex-start; }
   .partner p { text-align: left; }
   .partner img { width: 150px; }
