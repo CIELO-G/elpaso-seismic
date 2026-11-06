@@ -135,7 +135,6 @@ const STRINGS = {
     'faq.a4': 'A person checks every event before it goes on this page, so there is a delay. A quiet recent stretch usually means we have not reviewed it yet, not that nothing happened.',
 
     // ── about
-    'about.h2': 'About the network',
 
     // ── wave explainer
     'wave.noise.title': 'Before the event: background noise',
@@ -204,7 +203,7 @@ const STRINGS = {
     'foot.name': 'El Paso Seismic Network · The University of Texas at El Paso',
     'hud.quake': 'earthquake',
     'intro.h1': 'Earthquakes and quarry blasts in El Paso and Ciudad Juárez',
-    'intro.lead': 'We are a student-run seismic network at UTEP, with seismometers on both sides of the border. They record ground motion around the clock, and we list every event we confirm. Most are blasts at local quarries. Earthquakes here are rare.',
+    'intro.lead': 'The El Paso Seismic Network is a student-run project at The University of Texas at El Paso (UTEP). Community <b>Raspberry Shake</b> seismometers in El Paso and Ciudad Juárez, together with UTEP’s broadband station <b>KIDD</b>, record ground motion around the clock, and we list every event we confirm here. Most are blasts at local quarries.',
     'feltCard.h': 'Felt shaking just now?',
     'feltCard.body': 'Tell the U.S. Geological Survey. Reports from people who felt it help work out what happened, and it takes about a minute.',
     'feltCard.note': 'This site is not updated in real time and is not an emergency service. In an emergency, call 911.',
@@ -213,7 +212,6 @@ const STRINGS = {
     'blasts.p1': 'Several quarries around the Franklin Mountains and in Juárez use explosives to break up rock. Each blast shakes the ground enough for our stations to record it, and people nearby often feel or hear it. Almost every event in our catalog is one of these blasts.',
     'blasts.p2': 'Blasts and earthquakes can be told apart. A blast happens at the surface, during working hours, and comes from the same few places. An earthquake starts underground, can happen at any hour, and usually happens somewhere new. We check every event and label it one or the other before it goes on this page.',
     'expect.h3': 'What our records show so far',
-    'about.p1': 'The El Paso Seismic Network is run by students at The University of Texas at El Paso (UTEP) in partnership with CIELO-G. It combines community <b>Raspberry Shake</b> seismometers in El Paso and Ciudad Juárez with <b>KIDD</b>, UTEP’s broadband seismic station.',
     'about.p2': 'Earthquakes are rare here, so there is little local record of them. We are building that record now. It gives us a baseline to compare against, and if a larger earthquake ever happens, the instruments will already be in place.',
     'about.howH': 'How an event gets on this page',
     'about.step1': 'Each station records ground motion continuously, and we collect the data every night.',
@@ -222,6 +220,10 @@ const STRINGS = {
     'about.step4': 'A person reviews the event, labels it a quarry blast or an earthquake, and only then publishes it here.',
     'about.dataH': 'Data and code',
     'about.data': 'The catalog is public. You can download it as <a href="data/catalog.json">JSON</a>, read the <a href="https://github.com/CIELO-G/elpaso-seismic/blob/main/DATA.md">description of the data</a>, or look at the <a href="https://github.com/CIELO-G/elpaso-quake-network">processing code</a> and <a href="https://github.com/CIELO-G/elpaso-seismic">website code</a> on GitHub.',
+    'nav.how': 'How it works',
+    'about.funding': 'The network is part of <a href="https://www.cielog.org/">CIELO-G</a> (Community-driven Inclusive Excellence and Leadership Opportunities in the Geosciences), funded by the U.S. National Science Foundation under <a href="https://www.nsf.gov/awardsearch/show-award/?AWD_ID=2228180">Award No. 2228180</a>. CIELO-G brings together students, researchers, local educators and community organizations to work on geoscience questions in the Paso del Norte region, including earthquake hazards in West Texas and southern New Mexico.',
+    'about.award': 'Funded by NSF Award No. 2228180',
+    'about.disclaimer': 'This material is based upon work supported by the National Science Foundation under Award No. 2228180. Any opinions, findings, and conclusions or recommendations expressed here are those of the authors and do not necessarily reflect the views of the National Science Foundation.',
 
   },
 
@@ -339,7 +341,6 @@ const STRINGS = {
     'faq.a4': 'Una persona revisa cada evento antes de publicarlo, así que hay un retraso. Si no hay nada reciente, normalmente es porque todavía no lo revisamos, no porque no haya pasado nada.',
 
     // ── about
-    'about.h2': 'Acerca de la red',
 
     // ── wave explainer
     'wave.noise.title': 'Antes del evento: ruido de fondo',
@@ -408,7 +409,7 @@ const STRINGS = {
     'foot.name': 'Red Sísmica de El Paso · The University of Texas at El Paso',
     'hud.quake': 'sismo',
     'intro.h1': 'Sismos y voladuras de cantera en El Paso y Ciudad Juárez',
-    'intro.lead': 'Somos una red sísmica operada por estudiantes de UTEP, con sismómetros en ambos lados de la frontera. Registran el movimiento del suelo día y noche, y aquí publicamos cada evento que confirmamos. La mayoría son voladuras en canteras de la zona. Los sismos aquí son poco frecuentes.',
+    'intro.lead': 'La Red Sísmica de El Paso es un proyecto operado por estudiantes de The University of Texas at El Paso (UTEP). Sismómetros comunitarios <b>Raspberry Shake</b> en El Paso y Ciudad Juárez, junto con <b>KIDD</b>, la estación de banda ancha de UTEP, registran el movimiento del suelo día y noche, y aquí publicamos cada evento que confirmamos. La mayoría son voladuras en canteras de la zona.',
     'feltCard.h': '¿Acabas de sentir un temblor?',
     'feltCard.body': 'Avísale al Servicio Geológico de EE. UU. (USGS). Los reportes de quienes lo sintieron ayudan a entender qué pasó, y solo toma un minuto.',
     'feltCard.note': 'Este sitio no se actualiza en tiempo real y no es un servicio de emergencia. En una emergencia, llama al 911.',
@@ -417,7 +418,6 @@ const STRINGS = {
     'blasts.p1': 'Varias canteras alrededor de las Montañas Franklin y en Juárez usan explosivos para fragmentar la roca. Cada voladura sacude el suelo lo suficiente para que nuestras estaciones la registren, y muchas veces la gente cercana la siente o la oye. Casi todos los eventos de nuestro catálogo son voladuras.',
     'blasts.p2': 'Una voladura y un sismo se pueden distinguir. La voladura ocurre en la superficie, en horario de trabajo y desde los mismos pocos lugares. Un sismo empieza bajo tierra, puede ocurrir a cualquier hora y casi siempre en un lugar nuevo. Revisamos cada evento y lo clasificamos antes de publicarlo.',
     'expect.h3': 'Lo que muestran nuestros registros',
-    'about.p1': 'La Red Sísmica de El Paso la operan estudiantes de The University of Texas at El Paso (UTEP) en colaboración con CIELO-G. Combina sismómetros comunitarios <b>Raspberry Shake</b> en El Paso y Ciudad Juárez con <b>KIDD</b>, la estación sísmica de banda ancha de UTEP.',
     'about.p2': 'Los sismos aquí son poco frecuentes, así que hay poco registro local de ellos. Estamos construyendo ese registro ahora. Nos da una base para comparar y, si algún día ocurre un sismo mayor, los instrumentos ya estarán instalados.',
     'about.howH': 'Cómo llega un evento a esta página',
     'about.step1': 'Cada estación registra el movimiento del suelo de forma continua, y recopilamos los datos cada noche.',
@@ -426,6 +426,10 @@ const STRINGS = {
     'about.step4': 'Una persona revisa el evento, lo clasifica como voladura o sismo, y solo entonces lo publica aquí.',
     'about.dataH': 'Datos y código',
     'about.data': 'El catálogo es público. Puedes descargarlo en <a href="data/catalog.json">JSON</a>, leer la <a href="https://github.com/CIELO-G/elpaso-seismic/blob/main/DATA.md">descripción de los datos</a> (en inglés) o ver el <a href="https://github.com/CIELO-G/elpaso-quake-network">código de procesamiento</a> y el <a href="https://github.com/CIELO-G/elpaso-seismic">código del sitio</a> en GitHub.',
+    'nav.how': 'Cómo funciona',
+    'about.funding': 'La red forma parte de <a href="https://www.cielog.org/">CIELO-G</a> (Community-driven Inclusive Excellence and Leadership Opportunities in the Geosciences), financiado por la Fundación Nacional de Ciencias de EE. UU. (NSF) mediante el <a href="https://www.nsf.gov/awardsearch/show-award/?AWD_ID=2228180">premio n.º 2228180</a>. CIELO-G reúne a estudiantes, investigadores, docentes y organizaciones comunitarias para estudiar temas de geociencias en la región Paso del Norte, entre ellos el peligro sísmico en el oeste de Texas y el sur de Nuevo México.',
+    'about.award': 'Financiado por el premio NSF n.º 2228180',
+    'about.disclaimer': 'Este material se basa en trabajo financiado por la Fundación Nacional de Ciencias (NSF) mediante el premio n.º 2228180. Las opiniones, hallazgos, conclusiones o recomendaciones expresados aquí son de los autores y no reflejan necesariamente los puntos de vista de la NSF.',
 
   },
 };
